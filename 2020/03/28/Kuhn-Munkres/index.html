@@ -1,0 +1,674 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 5.2.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+  <link rel="manifest" href="/images/manifest.json">
+  <meta name="msapplication-config" content="/images/browserconfig.xml">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+
+<link rel="stylesheet" href="//cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@5.15.0/css/all.min.css">
+  <link rel="stylesheet" href="//cdn.jsdelivr.net/npm/animate.css@3.1.1/animate.min.css">
+
+<script class="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"piggerzzm.github.io","root":"/","scheme":"Gemini","version":"8.0.1","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12},"copycode":false,"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":true,"nav":null},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"fadeInDown","post_body":"fadeInDown","coll_header":"fadeInLeft","sidebar":"fadeInUp"}},"prism":false,"i18n":{"placeholder":"搜索...","empty":"没有找到任何搜索结果：${query}","hits_time":"找到 ${hits} 个搜索结果（用时 ${time} 毫秒）","hits":"找到 ${hits} 个搜索结果"}};
+  </script>
+
+  <meta name="description" content="Kuhn-Munkres算法 本文接着上一篇博客《匈牙利算法》，前篇讨论的是不带权的二分图求最大匹配，本篇讨论带权的二分图求最大权匹配——KM算法。实际上前者可以看作是后者的特殊情况，即权值只有0和1的情形。">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Kuhn-Munkres算法">
+<meta property="og:url" content="https://piggerzzm.github.io/2020/03/28/Kuhn-Munkres/index.html">
+<meta property="og:site_name" content="ZZM&#39;s Blog">
+<meta property="og:description" content="Kuhn-Munkres算法 本文接着上一篇博客《匈牙利算法》，前篇讨论的是不带权的二分图求最大匹配，本篇讨论带权的二分图求最大权匹配——KM算法。实际上前者可以看作是后者的特殊情况，即权值只有0和1的情形。">
+<meta property="og:locale" content="zh_CN">
+<meta property="article:published_time" content="2020-03-27T16:05:00.000Z">
+<meta property="article:modified_time" content="2020-10-29T12:43:51.847Z">
+<meta property="article:author" content="ZZM">
+<meta property="article:tag" content="图算法，最大权匹配">
+<meta name="twitter:card" content="summary">
+
+
+<link rel="canonical" href="https://piggerzzm.github.io/2020/03/28/Kuhn-Munkres/">
+
+
+<script class="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>Kuhn-Munkres算法 | ZZM's Blog</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  body { margin-top: 2rem; }
+
+  .use-motion .menu-item,
+  .use-motion .sidebar,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header {
+    visibility: visible;
+  }
+
+  .use-motion .header,
+  .use-motion .site-brand-container .toggle,
+  .use-motion .footer { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle,
+  .use-motion .custom-logo-image {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line {
+    transform: scaleX(1);
+  }
+
+  .search-pop-overlay, .sidebar-nav { display: none; }
+  .sidebar-panel { display: block; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage" class="use-motion">
+  <div class="headband"></div>
+
+  <main class="main">
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <i class="logo-line"></i>
+      <h1 class="site-title">ZZM's Blog</h1>
+      <i class="logo-line"></i>
+    </a>
+      <p class="site-subtitle" itemprop="description">ZZM's Blog</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+    </div>
+  </div>
+</div>
+
+
+
+<nav class="site-nav">
+  <ul class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-about">
+
+    <a href="/about/" rel="section"><i class="fa fa-user fa-fw"></i>关于</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a>
+
+  </li>
+        <li class="menu-item menu-item-schedule">
+
+    <a href="/schedule/" rel="section"><i class="fa fa-calendar fa-fw"></i>日程表</a>
+
+  </li>
+  </ul>
+</nav>
+
+
+
+
+</div>
+        
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+  </div>
+
+  <aside class="sidebar">
+
+    <div class="sidebar-inner sidebar-nav-active sidebar-toc-active">
+      <ul class="sidebar-nav">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <section class="post-toc-wrap sidebar-panel">
+          <div class="post-toc animated"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#kuhn-munkres%E7%AE%97%E6%B3%95"><span class="nav-number">1.</span> <span class="nav-text">Kuhn-Munkres算法</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%87%A0%E4%B8%AA%E5%9F%BA%E6%9C%AC%E4%BA%8B%E5%AE%9E"><span class="nav-number">1.1.</span> <span class="nav-text">几个基本事实</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%8F%AF%E8%A1%8C%E9%A1%B6%E6%A0%87%E4%B8%8E%E7%9B%B8%E7%AD%89%E5%AD%90%E5%9B%BE"><span class="nav-number">1.2.</span> <span class="nav-text">可行顶标与相等子图</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#km%E7%AE%97%E6%B3%95"><span class="nav-number">1.3.</span> <span class="nav-text">KM算法</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E7%AE%97%E6%B3%95%E6%A1%86%E6%9E%B6"><span class="nav-number">1.3.1.</span> <span class="nav-text">算法框架</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%88%9D%E5%A7%8B%E5%8F%AF%E8%A1%8C%E9%A1%B6%E6%A0%87%E5%92%8C%E5%88%9D%E5%A7%8B%E5%8C%B9%E9%85%8D"><span class="nav-number">1.3.2.</span> <span class="nav-text">初始可行顶标和初始匹配</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%94%B9%E8%BF%9B%E5%8F%AF%E8%A1%8C%E9%A1%B6%E6%A0%87"><span class="nav-number">1.3.3.</span> <span class="nav-text">改进可行顶标</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E4%BC%AA%E4%BB%A3%E7%A0%81"><span class="nav-number">1.3.4.</span> <span class="nav-text">伪代码</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E7%AE%97%E6%B3%95%E6%AD%A3%E7%A1%AE%E6%80%A7"><span class="nav-number">1.3.5.</span> <span class="nav-text">算法正确性</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%97%B6%E9%97%B4%E5%A4%8D%E6%9D%82%E5%BA%A6%E5%88%86%E6%9E%90"><span class="nav-number">1.3.6.</span> <span class="nav-text">时间复杂度分析</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#cpp%E5%AE%9E%E7%8E%B0"><span class="nav-number">1.4.</span> <span class="nav-text">cpp实现</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%8F%82%E8%80%83%E6%96%87%E7%8C%AE"><span class="nav-number">1.5.</span> <span class="nav-text">参考文献</span></a></li></ol></li></ol></div>
+      </section>
+      <!--/noindex-->
+
+      <section class="site-overview-wrap sidebar-panel">
+        <div class="site-author site-overview-item animated" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="ZZM"
+      src="/images/ZZM.jpg">
+  <p class="site-author-name" itemprop="name">ZZM</p>
+  <div class="site-description" itemprop="description">description</div>
+</div>
+<div class="site-state-wrap site-overview-item animated">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">14</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">5</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">15</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author site-overview-item animated">
+      <span class="links-of-author-item">
+        <a href="https://github.com/PiggerZZM" title="GitHub → https:&#x2F;&#x2F;github.com&#x2F;PiggerZZM" rel="noopener" target="_blank"><i class="fab fa-github fa-fw"></i>GitHub</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="/442823793@qq.com" title="E-Mail → 442823793@qq.com"><i class="fa fa-envelope fa-fw"></i>E-Mail</a>
+      </span>
+  </div>
+  <div class="cc-license site-overview-item animated" itemprop="license">
+    <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/deed.zh" class="cc-opacity" rel="noopener" target="_blank"><img src="/images/cc-by-nc-sa.svg" alt="Creative Commons"></a>
+  </div>
+
+
+
+      </section>
+    </div>
+  </aside>
+  <div class="sidebar-dimmer"></div>
+
+
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+
+<noscript>
+  <div class="noscript-warning">Theme NexT works best with JavaScript enabled</div>
+</noscript>
+
+
+    <div class="main-inner post posts-expand">
+      
+
+      
+
+  
+
+
+<div class="post-block">
+  
+  
+
+  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://piggerzzm.github.io/2020/03/28/Kuhn-Munkres/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/ZZM.jpg">
+      <meta itemprop="name" content="ZZM">
+      <meta itemprop="description" content="description">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="ZZM's Blog">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          Kuhn-Munkres算法
+        </h1>
+
+        <div class="post-meta-container">
+          <div class="post-meta">
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar"></i>
+      </span>
+      <span class="post-meta-item-text">发表于</span>
+
+      <time title="创建时间：2020-03-28 00:05:00" itemprop="dateCreated datePublished" datetime="2020-03-28T00:05:00+08:00">2020-03-28</time>
+    </span>
+      <span class="post-meta-item">
+        <span class="post-meta-item-icon">
+          <i class="far fa-calendar-check"></i>
+        </span>
+        <span class="post-meta-item-text">更新于</span>
+        <time title="修改时间：2020-10-29 20:43:51" itemprop="dateModified" datetime="2020-10-29T20:43:51+08:00">2020-10-29</time>
+      </span>
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-folder"></i>
+      </span>
+      <span class="post-meta-item-text">分类于</span>
+        <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+          <a href="/categories/%E8%AE%A1%E7%AE%97%E6%9C%BA%E7%A7%91%E5%AD%A6/" itemprop="url" rel="index"><span itemprop="name">计算机科学</span></a>
+        </span>
+    </span>
+
+  
+    <span id="/2020/03/28/Kuhn-Munkres/" class="post-meta-item leancloud_visitors" data-flag-title="Kuhn-Munkres算法" title="阅读次数">
+      <span class="post-meta-item-icon">
+        <i class="far fa-eye"></i>
+      </span>
+      <span class="post-meta-item-text">阅读次数：</span>
+      <span class="leancloud-visitors-count"></span>
+    </span>
+  
+  <span class="post-meta-item">
+    
+      <span class="post-meta-item-icon">
+        <i class="far fa-comment"></i>
+      </span>
+      <span class="post-meta-item-text">Valine：</span>
+    
+    <a title="valine" href="/2020/03/28/Kuhn-Munkres/#valine-comments" itemprop="discussionUrl">
+      <span class="post-comments-count valine-comment-count" data-xid="/2020/03/28/Kuhn-Munkres/" itemprop="commentCount"></span>
+    </a>
+  </span>
+  
+  
+</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+        <h1 id="kuhn-munkres算法">Kuhn-Munkres算法</h1>
+<p>本文接着上一篇博客《匈牙利算法》，前篇讨论的是不带权的二分图求最大匹配，本篇讨论带权的二分图求最大权匹配——KM算法。实际上前者可以看作是后者的特殊情况，即权值只有0和1的情形。</p>
+<a id="more"></a>
+<h2 id="几个基本事实">几个基本事实</h2>
+<ul>
+<li><p>WLOG，通过人为添加权值为0的边，任一个二分图<span class="math inline">\(G\)</span>都可以被改造成完全图而不影响我们所讨论的问题，因此以下的讨论全都视作完全二分带权图（只考虑非负权值）。</p></li>
+<li><p>如前篇所述，可以通过取反增广路的操作使得匹配边数+1</p></li>
+<li><p>最大权匹配一定是完备匹配（如果最大权匹配不完备的话，说明<span class="math inline">\(X\)</span>和<span class="math inline">\(Y\)</span>至少各有一个点未被匹配，加上这条边之后权和不可能更小）</p></li>
+</ul>
+<h2 id="可行顶标与相等子图">可行顶标与相等子图</h2>
+<p><strong>顶标</strong>：顶标是一个结点函数<span class="math inline">\(l:V\to \mathbb{R}\)</span></p>
+<p><strong>可行顶标</strong>：可行顶标是满足下面不等式的顶标（即边权不能超过两端点的顶标和） <span class="math display">\[
+l(x)+l(y)\ge w(x,y), \forall x \in X, y \in Y
+\]</span> <strong>相等子图</strong>：图<span class="math inline">\(G=(V,E)\)</span>的（相对于顶标<span class="math inline">\(l\)</span>的）相等子图<span class="math inline">\(G_l=(V,E_l)\)</span>包含图<span class="math inline">\(G\)</span>的所有顶点，但只包含边权等于两端点顶标和的边。即 <span class="math display">\[
+E_l={(x,y):l(x)+l(y)=w(x,y)}
+\]</span> &gt; <strong>Kuhn-Munkres定理</strong>：如果<span class="math inline">\(l\)</span>是可行顶标，<span class="math inline">\(M\)</span>是相等子图<span class="math inline">\(G_l\)</span>里的完美匹配，那么<span class="math inline">\(M\)</span>是图<span class="math inline">\(G\)</span>的最大权匹配。</p>
+<p><em>证明</em>：用<span class="math inline">\(e=(e_x,e_y)\)</span>来记图中的边，<span class="math inline">\(e_x\)</span>和<span class="math inline">\(e_y\)</span>分别是两端点。任取图<span class="math inline">\(G\)</span>的一个完美匹配<span class="math inline">\(M&#39;\)</span>，容易的到下面的不等式 <span class="math display">\[
+w(M&#39;)=\sum_{e\in M&#39;} w(e) \le \sum_{e\in M&#39;} l(e_x)+l(e_y) = \sum_{v\in V} l(v)
+\]</span> 这个不等式说明任何一个完美匹配权和的上界就是所有顶标和<span class="math inline">\(\sum_{v\in V} l(v)\)</span>，现在<span class="math inline">\(M\)</span>是相等子图<span class="math inline">\(G_l\)</span>的完美匹配，从而也是原图<span class="math inline">\(G\)</span>的完美匹配，所以有 <span class="math display">\[
+w(M)=\sum_{e\in M} w(e) = \sum_{v\in V} l(v)
+\]</span> 最大权匹配一定是一个完备匹配，易知所有完备匹配的权和上界也是<span class="math inline">\(\sum_{v\in V}l(v)\)</span>，所以<span class="math inline">\(M\)</span>就是最大权匹配。</p>
+<ul>
+<li><p>KM定理将求最大权匹配问题转化成了求完美匹配问题，这是组合优化问题里经典的技巧</p></li>
+<li><p>注意KM定理的证明里实际上证明了任意一个匹配<span class="math inline">\(M\)</span>和任意一个可行顶标<span class="math inline">\(l\)</span>都满足这个不等式</p></li>
+</ul>
+<p><span class="math display">\[
+w(M)\le \sum_{v\in V}l(v)
+\]</span></p>
+<ul>
+<li>和最大流最小割定理有哪些相似之处？</li>
+</ul>
+<h2 id="km算法">KM算法</h2>
+<h3 id="算法框架">算法框架</h3>
+<ol type="1">
+<li>给定初始可行顶标<span class="math inline">\(l\)</span>和初始匹配<span class="math inline">\(M\)</span></li>
+<li>当<span class="math inline">\(M\)</span>不是<span class="math inline">\(E_l\)</span>的完美匹配时，重复以下操作
+<ol type="1">
+<li>在相等子图<span class="math inline">\(E_l\)</span>里寻找增广路，然后通过取反操作使匹配数+1</li>
+<li>如果找不到增广路，将可行顶标<span class="math inline">\(l\)</span>改进为<span class="math inline">\(l&#39;\)</span>使得<span class="math inline">\(E_l \subset E_{l&#39;}\)</span>，跳转至1</li>
+</ol></li>
+</ol>
+<ul>
+<li>如果<span class="math inline">\(G\)</span>有完美匹配，因为每次迭代要么匹配数+1要么相等子图扩大，最终算法一定会停止，而且停止时<span class="math inline">\(M\)</span>是<span class="math inline">\(E_l\)</span>的完美匹配。根据KM定理，<span class="math inline">\(M\)</span>就是<span class="math inline">\(G\)</span>的最大权匹配。</li>
+</ul>
+<h3 id="初始可行顶标和初始匹配">初始可行顶标和初始匹配</h3>
+<p>最简单的可行顶标就是取<span class="math inline">\(X\)</span>的顶标为邻接边的最大权值，<span class="math inline">\(Y\)</span>的顶标取0 <span class="math display">\[
+\forall y \in Y, l(y) = 0 \\
+\forall x \in X, l(x) = \max_{y\in Y}\{w(x,y)\}
+\]</span> 这样显然满足可行顶标的要求 <span class="math display">\[
+\forall x \in X, y \in Y, w(x) \le l(x) + l(y)
+\]</span> 最简单的初始匹配就是<span class="math inline">\(M=\phi\)</span></p>
+<h3 id="改进可行顶标">改进可行顶标</h3>
+<p>设<span class="math inline">\(l\)</span>是一个可行顶标，顶点<span class="math inline">\(u\in V\)</span>，点集<span class="math inline">\(S\subseteq V\)</span>，定义点<span class="math inline">\(u\)</span>的邻接集<span class="math inline">\(N_l(u)\)</span>和<span class="math inline">\(S\)</span>的邻接集<span class="math inline">\(N_l(S)\)</span> <span class="math display">\[
+N_l(u) = \{v:(u,v)\in E_l\} \\
+N_l(S) = \bigcup_{u\in S} N_l(u)
+\]</span> &gt; <strong>引理</strong>：设<span class="math inline">\(S\subseteq X, T=N_l(S)\ne Y\)</span>，令<span class="math inline">\(\alpha_l\)</span>为</p>
+<p><span class="math display">\[
+\alpha_l = \min_{x\in S,y\notin T} \{l(x)+l(y)-w(x,y)\}
+\]</span> 令顶标<span class="math inline">\(l&#39;\)</span>为 <span class="math display">\[
+l&#39;(v) =
+\begin{cases}
+l(v)-\alpha_l,  &amp; v\in S \\
+l(v)+\alpha_l, &amp; v\in T \\
+l(v), &amp; otherwise
+\end{cases}
+\]</span> 那么<span class="math inline">\(l&#39;\)</span>也是一个可行顶标，并且</p>
+<ol type="1">
+<li>若<span class="math inline">\((x,y)\in E_l,x\in S,y\in T\)</span>，那么<span class="math inline">\((x,y)\in E_{l&#39;}\)</span></li>
+<li>若<span class="math inline">\((x,y)\in E_l,x\notin S,y\notin T\)</span>，那么<span class="math inline">\((x,y)\in E_{l&#39;}\)</span></li>
+<li>满足<span class="math inline">\(x\in S, y\notin T\)</span>的边<span class="math inline">\((x,y)\)</span>可能属于新的相等子图<span class="math inline">\(E_{l&#39;}\)</span></li>
+</ol>
+<ul>
+<li>这个引理说明：通过这种方式改进可行顶标，能够使原先在相等子图里的边仍然在相等子图里，有一端在<span class="math inline">\(S\)</span>里，另一端不在<span class="math inline">\(T\)</span>里的边有可能被纳入新的相等子图</li>
+</ul>
+<h3 id="伪代码">伪代码</h3>
+<ol type="1">
+<li><p>初始化可行顶标<span class="math inline">\(l\)</span>和相等子图<span class="math inline">\(E_l\)</span>的初始匹配<span class="math inline">\(M\)</span> <span class="math display">\[
+\forall y \in Y, l(y) = 0 \\
+\forall x \in X, l(x) = \max_{y\in Y}\{w(x,y)\} \\
+M=\phi
+\]</span></p></li>
+<li><p>若<span class="math inline">\(M\)</span>已经是完美匹配，停止算法；否则，选取未匹配点<span class="math inline">\(u\in X\)</span>，令<span class="math inline">\(S = \{u\}， T=\phi\)</span></p></li>
+<li><p>若<span class="math inline">\(N_l(S) = T\)</span>，更新可行顶标 <span class="math display">\[
+\alpha_l = \min_{x\in S,y\notin T} \{l(x)+l(y)-w(x,y)\} \\
+l&#39;(v) =
+\begin{cases}
+l(v)-\alpha_l,  &amp; v\in S \\
+l(v)+\alpha_l, &amp; v\in T \\
+l(v), &amp; otherwise
+\end{cases}
+\]</span></p></li>
+<li><p>若<span class="math inline">\(N_l(S)\ne T\)</span>，选取<span class="math inline">\(y\in N_l(S) - T\)</span></p>
+<ol type="1">
+<li>若<span class="math inline">\(y\)</span>是未匹配点，那么从<span class="math inline">\(u\)</span>到<span class="math inline">\(y\)</span>就找到了一条增广路，取反使匹配数+1，跳转至2</li>
+<li>若<span class="math inline">\(y\)</span>是匹配点，设<span class="math inline">\(y\)</span>目前与<span class="math inline">\(z\)</span>匹配，令<span class="math inline">\(S=S\cup \{z\},T=T\cup \{y\}\)</span>，跳转至3</li>
+</ol></li>
+</ol>
+<h3 id="算法正确性">算法正确性</h3>
+<p>由引理保证了算法在执行过程一致保持着顶标的可行性，算法通过改变可行顶标从而逐渐扩大相等子图。每次找到一个<span class="math inline">\(Y\)</span>里的未匹配点，就使得匹配数+1。最终算法会在达到完美匹配的时候终止，根据KM定理，就得到了原图的最大权匹配。</p>
+<h3 id="时间复杂度分析">时间复杂度分析</h3>
+<p>在具体实现中，通常为每个<span class="math inline">\(y\)</span>结点定义一个松弛度存放在数组里，这样可以减少<span class="math inline">\(\alpha_l\)</span>的计算量 <span class="math display">\[
+slack_y = \min_{x\in S} \{l(x) + l(y) - w(x,y)\}
+\]</span> 首先将算法运行的过程分为<span class="math inline">\(|M|\)</span>个阶段，使匹配数+1的若干次迭代记作一个阶段，每个阶段都经历了若干次步骤2、3、4，下面来具体分析每个步骤的时间复杂度。</p>
+<p>步骤2：每个阶段都只会经历一次步骤2。初始化<span class="math inline">\(S\)</span>和<span class="math inline">\(T\)</span>显然是<span class="math inline">\(O(1)\)</span>的，但此时还要初始化<span class="math inline">\(slack\)</span>数组。因为<span class="math inline">\(S\)</span>里只有1个点，只需要<span class="math inline">\(|S|\)</span>次计算就可初始化完毕，所以步骤2总共是<span class="math inline">\(O(|V|)\)</span>的。</p>
+<p>步骤3：计算<span class="math inline">\(\alpha_l=\min_{y\in T} slack_y\)</span>这一步是<span class="math inline">\(O(|T|)\)</span>的，更新可行顶标<span class="math inline">\(l&#39;\)</span>是<span class="math inline">\(O(|T|+|S|)\)</span>的，更新完可行顶标之后还要重新更新<span class="math inline">\(slack\)</span>数组，根据定义不难推出这里只需要执行<span class="math inline">\(\forall y\notin T, slack_y = slack_y - \alpha_l\)</span>，所以是<span class="math inline">\(O(|Y-T|)\)</span>的。要注意的是步骤3在每个阶段可能经历多次，但最多只会经历<span class="math inline">\(O(|Y|)\)</span>次（因为每经历一次步骤4如果需要回到步骤3的话，一定使<span class="math inline">\(T\)</span>增加一个点）。上面的复杂度全都可以放缩成<span class="math inline">\(O(|V|)\)</span>，所以步骤3总共是<span class="math inline">\(O(|V|^2)\)</span>的。</p>
+<p>步骤4：第1种情况在每个阶段只会经历一次，取反操作是<span class="math inline">\(O(|V|)\)</span>的。第2种情况同步骤3的分析，至多经历<span class="math inline">\(O(|V|)\)</span>次，更新集合<span class="math inline">\(S\)</span>和<span class="math inline">\(T\)</span>只需要<span class="math inline">\(O(1)\)</span>的时间。但由于集合<span class="math inline">\(S\)</span>多加了一个点，需要更新<span class="math inline">\(slack\)</span>数组，<span class="math inline">\(\forall y\notin T, slack_y = \min \{slack_y, l(z)+l(y)-w(z,y)\}\)</span>，这需要<span class="math inline">\(O(|Y|)\)</span>的时间。步骤4总共是<span class="math inline">\(O(|V|^2)\)</span>的。</p>
+<p>最后，因为匹配数<span class="math inline">\(|M|\)</span>不可能超过<span class="math inline">\(|V|/2\)</span>，所以阶段数也是<span class="math inline">\(O(|V|)\)</span>的，得出整个算法的时间复杂度是<span class="math inline">\(O(|V|^3)\)</span></p>
+<h2 id="cpp实现">cpp实现</h2>
+<p>由于时间紧迫，用松弛度数组优化后的<span class="math inline">\(O(|V|^3)\)</span>的算法暂时先挖个坑以后再填。这里给出原始的<span class="math inline">\(O(|V|^4)\)</span>实现。</p>
+<p>用邻接矩阵存储二分图，两个数组存储顶标，match数组用来记录匹配（记录增广路），S和T两个数组来记录算法里的两个集合<span class="math inline">\(S\)</span>和<span class="math inline">\(T\)</span></p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">int</span> Weight[maxm][maxn];</span><br><span class="line"><span class="keyword">int</span> Lx[maxm], Ly[maxn]; <span class="comment">// 顶标</span></span><br><span class="line"><span class="keyword">int</span> match[maxn];    <span class="comment">// 记录匹配</span></span><br><span class="line"><span class="keyword">bool</span> S[maxm], T[maxn];  <span class="comment">// 算法中的两个集合S和T</span></span><br></pre></td></tr></table></figure>
+<p>步骤1的初始化可行顶标和初始化匹配写成一个函数</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">Init</span><span class="params">()</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">    <span class="comment">// 将X集合的顶标设为最大边权，Y集合的顶标设为0</span></span><br><span class="line">    <span class="keyword">for</span> (<span class="keyword">int</span> i = <span class="number">1</span>; i &lt;= m; i++)</span><br><span class="line">    &#123;</span><br><span class="line">        Lx[i] = <span class="number">0</span>;</span><br><span class="line">        <span class="keyword">for</span> (<span class="keyword">int</span> j = <span class="number">1</span>; j &lt;= n; j++)</span><br><span class="line">        &#123;</span><br><span class="line">            match[j] = <span class="number">0</span>;   <span class="comment">// match记录的是Y集合里的点与谁匹配</span></span><br><span class="line">            Ly[j] = <span class="number">0</span>;</span><br><span class="line">            Lx[i] = max(Lx[i], Weight[i][j]);</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>步骤3的更新顶标就直接用没优化前的原始实现了</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">update</span><span class="params">()</span> <span class="comment">// 更新顶标</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">    <span class="comment">// 计算a</span></span><br><span class="line">    <span class="keyword">int</span> a = <span class="number">1</span> &lt;&lt; <span class="number">30</span>;</span><br><span class="line">    <span class="keyword">for</span> (<span class="keyword">int</span> i = <span class="number">1</span>; i &lt;= m; i++)</span><br><span class="line">        <span class="keyword">if</span> (S[i])</span><br><span class="line">            <span class="keyword">for</span> (<span class="keyword">int</span> j = <span class="number">1</span>; j &lt;= n; j++)</span><br><span class="line">                <span class="keyword">if</span> (!T[j])</span><br><span class="line">                    a = min(a, Lx[i] + Ly[j] - Weight[i][j]);</span><br><span class="line"></span><br><span class="line">    <span class="comment">// 修改顶标</span></span><br><span class="line">    <span class="keyword">for</span> (<span class="keyword">int</span> i = <span class="number">1</span>; i &lt;= m; i++)</span><br><span class="line">        <span class="keyword">if</span> (S[i])</span><br><span class="line">            Lx[i] -= a;</span><br><span class="line">    <span class="keyword">for</span> (<span class="keyword">int</span> j = <span class="number">1</span>; j &lt;= n; j++)</span><br><span class="line">        <span class="keyword">if</span> (T[j]) </span><br><span class="line">            Ly[j] += a;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>步骤4可以用递归来实现，写成了DFS（这里和前篇的匈牙利算法实现非常相似，因为都是在寻找增广路）</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">bool</span> <span class="title">findPath</span><span class="params">(<span class="keyword">int</span> i)</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">    S[i] = <span class="literal">true</span>;</span><br><span class="line">    <span class="keyword">for</span> (<span class="keyword">int</span> j = <span class="number">1</span>; j &lt;= n; j++)</span><br><span class="line">    &#123;</span><br><span class="line">        <span class="keyword">if</span> (Lx[i] + Ly[j] == Weight[i][j] &amp;&amp; !T[j]) <span class="comment">// 找出在相等子图里又还未被标记的边</span></span><br><span class="line">        &#123;</span><br><span class="line">            T[j] = <span class="literal">true</span>;</span><br><span class="line">            <span class="keyword">if</span> (!match[j] || findPath(match[j])) <span class="comment">// 未被匹配，或者已经匹配又找到增广路</span></span><br><span class="line">            &#123;</span><br><span class="line">                match[j] = i;</span><br><span class="line">                <span class="keyword">return</span> <span class="literal">true</span>;</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">return</span> <span class="literal">false</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>然后就是整个算法的合写</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">KM</span><span class="params">()</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">    Init();</span><br><span class="line"></span><br><span class="line">    <span class="keyword">for</span> (<span class="keyword">int</span> i = <span class="number">1</span>; i &lt;= m; i++)</span><br><span class="line">    &#123;</span><br><span class="line">        <span class="keyword">while</span> (<span class="literal">true</span>)</span><br><span class="line">        &#123;</span><br><span class="line">            <span class="keyword">for</span> (<span class="keyword">int</span> i = <span class="number">1</span>; i &lt;= m; i++)</span><br><span class="line">                S[i] = <span class="number">0</span>;</span><br><span class="line">            <span class="keyword">for</span> (<span class="keyword">int</span> j = <span class="number">1</span>; j &lt;= n; j++)</span><br><span class="line">                T[j] = <span class="number">0</span>;</span><br><span class="line">            <span class="keyword">if</span> (!findPath(i))</span><br><span class="line">                update();</span><br><span class="line">            <span class="keyword">else</span></span><br><span class="line">                <span class="keyword">break</span>;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>最后调用即可，完成后查看match数组就能查看匹配结果</p>
+<h2 id="参考文献">参考文献</h2>
+<p><a target="_blank" rel="noopener" href="https://blog.csdn.net/sixdaycoder/article/details/47720471">受益匪浅的一篇博客</a></p>
+<p><a target="_blank" rel="noopener" href="https://www.cnblogs.com/zpfbuaa/p/7218607.html#_label1">另一篇受益匪浅的博客</a></p>
+<p><a target="_blank" rel="noopener" href="https://blog.sengxian.com/algorithms/km">又一篇受益匪浅的博客</a></p>
+<p><a target="_blank" rel="noopener" href="https://www.cnblogs.com/wenruo/p/5264235.html">形象描述算法运行过程</a></p>
+<p><a target="_blank" rel="noopener" href="https://www.mina.moe/archives/12170">线性规划的观点值得一看</a></p>
+<p><a target="_blank" rel="noopener" href="http://longrm.com/2018/05/05/2018-05-05-KM/">一篇介绍的非常详细的博客</a></p>
+<p><a target="_blank" rel="noopener" href="https://www.cse.ust.hk/~golin/COMP572/Notes/Matching.pdf">本文撰写时的主要参考来源</a></p>
+<p><a target="_blank" rel="noopener" href="https://www.researchgate.net/publication/290437481_Tutorial_on_Implementation_of_Munkres&#39;_Assignment_Algorithm">一篇Murray State University的KM算法教程</a></p>
+<p>最后放上Kuhn和Munkres的论文</p>
+<p>[1] Munkres, James. "Algorithms for the assignment and transportation problems." Journal of the society for industrial and applied mathematics 5.1 (1957): 32-38.</p>
+<p>[2] Kuhn, Harold W. "The Hungarian method for the assignment problem." <em>Naval research logistics quarterly</em> 2.1‐2 (1955): 83-97.</p>
+
+    </div>
+
+    
+    
+    
+
+    <footer class="post-footer">
+          
+
+<div class="post-copyright">
+<ul>
+  <li class="post-copyright-author">
+      <strong>本文作者： </strong>ZZM
+  </li>
+  <li class="post-copyright-link">
+      <strong>本文链接：</strong>
+      <a href="https://piggerzzm.github.io/2020/03/28/Kuhn-Munkres/" title="Kuhn-Munkres算法">https://piggerzzm.github.io/2020/03/28/Kuhn-Munkres/</a>
+  </li>
+  <li class="post-copyright-license">
+    <strong>版权声明： </strong>本博客所有文章除特别声明外，均采用 <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/deed.zh" rel="noopener" target="_blank"><i class="fab fa-fw fa-creative-commons"></i>BY-NC-SA</a> 许可协议。转载请注明出处！
+  </li>
+</ul>
+</div>
+
+          <div class="post-tags">
+              <a href="/tags/%E5%9B%BE%E7%AE%97%E6%B3%95%EF%BC%8C%E6%9C%80%E5%A4%A7%E6%9D%83%E5%8C%B9%E9%85%8D/" rel="tag"># 图算法，最大权匹配</a>
+          </div>
+
+        
+
+          <div class="post-nav">
+            <div class="post-nav-item">
+                <a href="/2020/03/22/Hungary/" rel="prev" title="匈牙利算法">
+                  <i class="fa fa-chevron-left"></i> 匈牙利算法
+                </a>
+            </div>
+            <div class="post-nav-item">
+                <a href="/2020/04/25/logistic%20Regression/" rel="next" title="Logistic Regression小结">
+                  Logistic Regression小结 <i class="fa fa-chevron-right"></i>
+                </a>
+            </div>
+          </div>
+    </footer>
+  </article>
+</div>
+
+
+
+
+
+
+      
+    <div class="comments" id="valine-comments"></div>
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      const activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      const commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+    </div>
+  </main>
+
+  <footer class="footer">
+    <div class="footer-inner">
+      
+
+      
+
+<div class="copyright">
+  
+  &copy; 2015 – 
+  <span itemprop="copyrightYear">2020</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">ZZM</span>
+</div>
+  <div class="powered-by">由 <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://theme-next.js.org/" class="theme-link" rel="noopener" target="_blank">NexT.Gemini</a> 强力驱动
+  </div>
+
+    </div>
+  </footer>
+
+  
+  <script src="//cdn.jsdelivr.net/npm/animejs@3.2.0/lib/anime.min.js"></script>
+<script src="/js/utils.js"></script><script src="/js/motion.js"></script><script src="/js/next-boot.js"></script>
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+
+
+
+
+
+
+
+  
+
+  
+      <script>
+  if (typeof MathJax === 'undefined') {
+    window.MathJax = {
+      tex: {
+        inlineMath: {'[+]': [['$', '$']]},
+        tags: 'ams'
+      },
+      options: {
+        renderActions: {
+          findScript: [10, doc => {
+            document.querySelectorAll('script[type^="math/tex"]').forEach(node => {
+              const display = !!node.type.match(/; *mode=display/);
+              const math = new doc.options.MathItem(node.textContent, doc.inputJax[0], display);
+              const text = document.createTextNode('');
+              node.parentNode.replaceChild(text, node);
+              math.start = {node: text, delim: '', n: 0};
+              math.end = {node: text, delim: '', n: 0};
+              doc.math.push(math);
+            });
+          }, '', false],
+          insertedScript: [200, () => {
+            document.querySelectorAll('mjx-container').forEach(node => {
+              const target = node.parentNode;
+              if (target.nodeName.toLowerCase() === 'li') {
+                target.parentNode.classList.add('has-jax');
+              }
+            });
+          }, '', false]
+        }
+      }
+    };
+    const script = document.createElement('script');
+    script.src = '//cdn.jsdelivr.net/npm/mathjax@3.1.2/es5/tex-mml-chtml.js';
+    script.defer = true;
+    document.head.appendChild(script);
+  } else {
+    MathJax.startup.document.state(0);
+    MathJax.typesetClear();
+    MathJax.texReset();
+    MathJax.typeset();
+  }
+</script>
+
+    
+
+  
+
+<script>
+NexT.utils.loadComments('#valine-comments', () => {
+  NexT.utils.getScript('//cdn.jsdelivr.net/npm/valine@1.4.14/dist/Valine.min.js', () => {
+    new Valine(Object.assign({"enable":true,"appId":"O43HpTIt69GbGvmdo1zlOrp3-gzGzoHsz","appKey":"Aa5tuTeHefCLzkzICbNgvDmx","serverURLs":null,"placeholder":"Just go go","avatar":"mm","meta":["nick","mail","link"],"pageSize":10,"lang":null,"visitor":true,"comment_count":true,"recordIP":true,"enableQQ":false,"requiredFields":[]}, {
+      el: '#valine-comments',
+      path: "/2020/03/28/Kuhn-Munkres/",
+      serverURLs: "https://o43hptit.api.lncldglobal.com"
+    }));
+  }, window.Valine);
+});
+</script>
+
+</body>
+</html>

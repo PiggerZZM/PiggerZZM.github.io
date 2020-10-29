@@ -1,0 +1,615 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 5.2.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+  <link rel="manifest" href="/images/manifest.json">
+  <meta name="msapplication-config" content="/images/browserconfig.xml">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+
+<link rel="stylesheet" href="//cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@5.15.0/css/all.min.css">
+  <link rel="stylesheet" href="//cdn.jsdelivr.net/npm/animate.css@3.1.1/animate.min.css">
+
+<script class="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"piggerzzm.github.io","root":"/","scheme":"Gemini","version":"8.0.1","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12},"copycode":false,"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":true,"nav":null},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"fadeInDown","post_body":"fadeInDown","coll_header":"fadeInLeft","sidebar":"fadeInUp"}},"prism":false,"i18n":{"placeholder":"搜索...","empty":"没有找到任何搜索结果：${query}","hits_time":"找到 ${hits} 个搜索结果（用时 ${time} 毫秒）","hits":"找到 ${hits} 个搜索结果"}};
+  </script>
+
+  <meta name="description" content="总结一下Hamming距离，奇偶校验码，Hamming码的知识  主要参考：《计算机网络》——Tanenbaum">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Hamming码">
+<meta property="og:url" content="https://piggerzzm.github.io/2019/04/13/Hamming%E7%A0%81/index.html">
+<meta property="og:site_name" content="ZZM&#39;s Blog">
+<meta property="og:description" content="总结一下Hamming距离，奇偶校验码，Hamming码的知识  主要参考：《计算机网络》——Tanenbaum">
+<meta property="og:locale" content="zh_CN">
+<meta property="article:published_time" content="2019-04-13T07:34:07.000Z">
+<meta property="article:modified_time" content="2020-10-29T12:38:40.848Z">
+<meta property="article:author" content="ZZM">
+<meta property="article:tag" content="计算机网络">
+<meta property="article:tag" content="Hamming码">
+<meta name="twitter:card" content="summary">
+
+
+<link rel="canonical" href="https://piggerzzm.github.io/2019/04/13/Hamming%E7%A0%81/">
+
+
+<script class="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>Hamming码 | ZZM's Blog</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  body { margin-top: 2rem; }
+
+  .use-motion .menu-item,
+  .use-motion .sidebar,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header {
+    visibility: visible;
+  }
+
+  .use-motion .header,
+  .use-motion .site-brand-container .toggle,
+  .use-motion .footer { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle,
+  .use-motion .custom-logo-image {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line {
+    transform: scaleX(1);
+  }
+
+  .search-pop-overlay, .sidebar-nav { display: none; }
+  .sidebar-panel { display: block; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage" class="use-motion">
+  <div class="headband"></div>
+
+  <main class="main">
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <i class="logo-line"></i>
+      <h1 class="site-title">ZZM's Blog</h1>
+      <i class="logo-line"></i>
+    </a>
+      <p class="site-subtitle" itemprop="description">ZZM's Blog</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+    </div>
+  </div>
+</div>
+
+
+
+<nav class="site-nav">
+  <ul class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-about">
+
+    <a href="/about/" rel="section"><i class="fa fa-user fa-fw"></i>关于</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a>
+
+  </li>
+        <li class="menu-item menu-item-schedule">
+
+    <a href="/schedule/" rel="section"><i class="fa fa-calendar fa-fw"></i>日程表</a>
+
+  </li>
+  </ul>
+</nav>
+
+
+
+
+</div>
+        
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+  </div>
+
+  <aside class="sidebar">
+
+    <div class="sidebar-inner sidebar-nav-active sidebar-toc-active">
+      <ul class="sidebar-nav">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <section class="post-toc-wrap sidebar-panel">
+          <div class="post-toc animated"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#hamming%E7%A0%81"><span class="nav-number">1.</span> <span class="nav-text">Hamming码</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#hamming%E8%B7%9D%E7%A6%BB"><span class="nav-number">1.1.</span> <span class="nav-text">Hamming距离</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%A5%87%E5%81%B6%E6%A0%A1%E9%AA%8C%E7%A0%81"><span class="nav-number">1.2.</span> <span class="nav-text">奇偶校验码</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#hamming%E7%A0%81-1"><span class="nav-number">1.3.</span> <span class="nav-text">Hamming码</span></a></li></ol></li></ol></div>
+      </section>
+      <!--/noindex-->
+
+      <section class="site-overview-wrap sidebar-panel">
+        <div class="site-author site-overview-item animated" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="ZZM"
+      src="/images/ZZM.jpg">
+  <p class="site-author-name" itemprop="name">ZZM</p>
+  <div class="site-description" itemprop="description">description</div>
+</div>
+<div class="site-state-wrap site-overview-item animated">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">14</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">5</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">15</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author site-overview-item animated">
+      <span class="links-of-author-item">
+        <a href="https://github.com/PiggerZZM" title="GitHub → https:&#x2F;&#x2F;github.com&#x2F;PiggerZZM" rel="noopener" target="_blank"><i class="fab fa-github fa-fw"></i>GitHub</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="/442823793@qq.com" title="E-Mail → 442823793@qq.com"><i class="fa fa-envelope fa-fw"></i>E-Mail</a>
+      </span>
+  </div>
+  <div class="cc-license site-overview-item animated" itemprop="license">
+    <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/deed.zh" class="cc-opacity" rel="noopener" target="_blank"><img src="/images/cc-by-nc-sa.svg" alt="Creative Commons"></a>
+  </div>
+
+
+
+      </section>
+    </div>
+  </aside>
+  <div class="sidebar-dimmer"></div>
+
+
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+
+<noscript>
+  <div class="noscript-warning">Theme NexT works best with JavaScript enabled</div>
+</noscript>
+
+
+    <div class="main-inner post posts-expand">
+      
+
+      
+
+  
+
+
+<div class="post-block">
+  
+  
+
+  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://piggerzzm.github.io/2019/04/13/Hamming%E7%A0%81/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/ZZM.jpg">
+      <meta itemprop="name" content="ZZM">
+      <meta itemprop="description" content="description">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="ZZM's Blog">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          Hamming码
+        </h1>
+
+        <div class="post-meta-container">
+          <div class="post-meta">
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar"></i>
+      </span>
+      <span class="post-meta-item-text">发表于</span>
+
+      <time title="创建时间：2019-04-13 15:34:07" itemprop="dateCreated datePublished" datetime="2019-04-13T15:34:07+08:00">2019-04-13</time>
+    </span>
+      <span class="post-meta-item">
+        <span class="post-meta-item-icon">
+          <i class="far fa-calendar-check"></i>
+        </span>
+        <span class="post-meta-item-text">更新于</span>
+        <time title="修改时间：2020-10-29 20:38:40" itemprop="dateModified" datetime="2020-10-29T20:38:40+08:00">2020-10-29</time>
+      </span>
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-folder"></i>
+      </span>
+      <span class="post-meta-item-text">分类于</span>
+        <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+          <a href="/categories/%E8%AE%A1%E7%AE%97%E6%9C%BA%E7%A7%91%E5%AD%A6/" itemprop="url" rel="index"><span itemprop="name">计算机科学</span></a>
+        </span>
+    </span>
+
+  
+    <span id="/2019/04/13/Hamming%E7%A0%81/" class="post-meta-item leancloud_visitors" data-flag-title="Hamming码" title="阅读次数">
+      <span class="post-meta-item-icon">
+        <i class="far fa-eye"></i>
+      </span>
+      <span class="post-meta-item-text">阅读次数：</span>
+      <span class="leancloud-visitors-count"></span>
+    </span>
+  
+  <span class="post-meta-item">
+    
+      <span class="post-meta-item-icon">
+        <i class="far fa-comment"></i>
+      </span>
+      <span class="post-meta-item-text">Valine：</span>
+    
+    <a title="valine" href="/2019/04/13/Hamming%E7%A0%81/#valine-comments" itemprop="discussionUrl">
+      <span class="post-comments-count valine-comment-count" data-xid="/2019/04/13/Hamming%E7%A0%81/" itemprop="commentCount"></span>
+    </a>
+  </span>
+  
+  
+</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+        <p>总结一下Hamming距离，奇偶校验码，Hamming码的知识</p>
+<blockquote>
+<p>主要参考：《计算机网络》——Tanenbaum</p>
+</blockquote>
+<a id="more"></a>
+<h1 id="hamming码">Hamming码</h1>
+<p>在数据链路层的差错控制中，为了使接收方能够有一定程度的对传输的检错或纠错能力，并不是直接传输原始的位串，而是需要采用一些特殊的编码方式，传输经过编码后的信息。编码，就是将原本需要传输的位串增加一些冗余位，构成一个新的位串。</p>
+<h2 id="hamming距离">Hamming距离</h2>
+<p>一个编码方案的检错和纠错能力，和编码方案Hamming距离有关，以下先定义位串的Hamming距离和编码方案的Hamming距离。</p>
+<blockquote>
+<p><strong>位串的Hamming距离</strong>：两个相同位数的位串中不同位的个数称为Hamming距离</p>
+</blockquote>
+<blockquote>
+<p><strong>编码方案的Hamming距离</strong>：设<span class="math inline">\(X\)</span>是一个编码方案，<span class="math inline">\(Y\subset X\)</span>是原本需要传输的原始位串经过编码后形成的合法位串的集合，<span class="math inline">\(Y\)</span>中两个不同位串的最小Hamming距离称为<span class="math inline">\(X\)</span>的Hamming距离</p>
+</blockquote>
+<p>下面两个定理给出了编码方案的Hamming距离和检错纠错能力的关系。</p>
+<blockquote>
+<p>定理1：在一个至多出现<span class="math inline">\(d\)</span>个错误的传输中，至少需要一个Hamming距离为<span class="math inline">\(d+1\)</span>的编码方案，才能保证接收方检查出传输错误</p>
+</blockquote>
+<p><em>证明</em>：<span class="math inline">\(d\)</span>个错误至多使一个合法位串变成另一个和它Hamming距离不超过<span class="math inline">\(d\)</span>的，错误位串，但Hamming距离为<span class="math inline">\(d+1\)</span>的编码方案中，任意两个合法位串的Hamming距离<span class="math inline">\(\ge d+1\)</span>，因此可以检查出来这个传输错误的位串不合法。</p>
+<blockquote>
+<p>定理2：在一个至多出现<span class="math inline">\(d\)</span>个错误的传输中，至少需要一个Hamming距离为<span class="math inline">\(2d+1\)</span>的编码方案，才能保证接收方纠正传输错误</p>
+</blockquote>
+<p><em>证明</em>：<span class="math inline">\(d\)</span>个错误至多使一个合法位串变成另一个和它Hamming距离不超过d的错误位串，这样能保证错误位串与其他的合法位串的Hamming距离<span class="math inline">\(\ge d+1\)</span>，但与原位串的Hamming距离<span class="math inline">\(\le d\)</span>，接收方只需在合法位串中找到与该错误位串Hamming距离最小的合法位串，就可以纠正错误。</p>
+<ul>
+<li>注：Hamming距离也可以用异或运算来定义，即两个位串异或得到的新位串再按位求和</li>
+<li><em>这里挖个坑：Hamming距离应该是定义在<span class="math inline">\(\{0,1\}^n\)</span>上的一个距离</em></li>
+</ul>
+<h2 id="奇偶校验码">奇偶校验码</h2>
+<p>最简单的具有检错能力的编码方案，就是能够检查至多1位错误的编码方案，下面将看到，奇偶校验码就是这样的编码方案。</p>
+<blockquote>
+<p><strong>奇偶校验码</strong>：对一个原始位串增加一位冗余位，使得新位串中1的个数是(奇)偶数，这种编码称为奇偶校验码。</p>
+</blockquote>
+<blockquote>
+<p>定理3：奇偶校验码是一种能检查至多1位错误的编码方案</p>
+</blockquote>
+<p><em>证明</em>：由定理1，只需证明奇偶校验码的Hamming距离<span class="math inline">\(\ge 2\)</span>即可。任取两个不同的合法位串，假设其Hamming距离为1，说明这两个位串中的第<span class="math inline">\(k\)</span>位一个是0，一个是1。</p>
+<ul>
+<li><p>Case1：第<span class="math inline">\(k\)</span>位是冗余位。则这两个位串的消息位相同，按奇偶校验码的定义，消息位相同冗余位也必定相同，矛盾。</p></li>
+<li><p>Case2：第<span class="math inline">\(k\)</span>位不是冗余位。则这两个位串中1的总个数不相同，其冗余位必定也不相同，这样这两个合法位串的Hamming距离是2，矛盾。</p></li>
+</ul>
+<p>这说明不存在Hamming距离为1的两个合法位串，所以奇偶校验码的Hamming距离<span class="math inline">\(\ge 2\)</span>。</p>
+<h2 id="hamming码-1">Hamming码</h2>
+<p>最简单的具有纠错能力的编码方案，就是能够纠正至多1位错误的编码方案，Hamming码是基于奇偶校验码提出的，它在原<span class="math inline">\(m\)</span>位消息位上增加了<span class="math inline">\(r\)</span>个冗余位，编码后的位串一共有<span class="math inline">\(n=m+r\)</span>位，下面将证明，Hamming码能够纠正至多1位错误。</p>
+<p>可想而知，一个编码方案的冗余位越多，其Hamming距离应该越大，但冗余位越多传输消息的效率就越低，所以应当使用尽可能少的冗余位。</p>
+<blockquote>
+<p>定理4：若消息位的位数为<span class="math inline">\(m\)</span>，一个<span class="math inline">\(r\)</span>位冗余位的能纠正至多1位错误的编码方案，需要满足以下不等式， <span class="math display">\[ m+r+1\le 2^r\]</span></p>
+</blockquote>
+<p>这个定理实际上给出了能纠正至多1位错误的编码方案所需要的冗余位的下界</p>
+<p><em>证明</em>：<span class="math inline">\(m\)</span>位的消息位总共可表达<span class="math inline">\(2^m\)</span>条消息，每条消息经过编码后对应了编码方案中的<span class="math inline">\(2^m\)</span>个位串。每个经过编码后的正确位串是<span class="math inline">\(n\)</span>位，一个正确位串出现<span class="math inline">\(1\)</span>位错误后产生的错误位串有<span class="math inline">\(n\)</span>个，因此这个编码方案应该包括<span class="math inline">\(2^m\)</span>个正确位串，以及<span class="math inline">\(n\times 2^m\)</span>个错误位串。 两个不同的消息所对应的正确位串一定是不同的，而且错误位串也不能够有相同，否则就存在一个位串和两个正确的位串Hamming距离都是1，这个位串就无法纠错了。 <span class="math inline">\(n\)</span>位的编码总共有<span class="math inline">\(2^n\)</span>个位串，所以有<span class="math inline">\((n+1)2^m\le 2^n\)</span>，带入<span class="math inline">\(n=m+r\)</span>整理即可得到不等式$ m+r+1^r$。</p>
+<ul>
+<li>注1：同样的思路可以给出能纠正至多<span class="math inline">\(k\)</span>位错误的编码方案的冗余位下界</li>
+<li>注2：对于检错码，检查至多<span class="math inline">\(1\)</span>位错误只需要<span class="math inline">\(1\)</span>位冗余位，奇偶校验码就是一个构造性的证明</li>
+<li><em>这里再挖个坑：检查至多<span class="math inline">\(k\)</span>位错需要多少位冗余位，暂时没想到</em></li>
+</ul>
+<blockquote>
+<p><strong>Hamming码</strong>：(下标从1开始，下标都用二进制表示)下标只有一个<span class="math inline">\(1\)</span>的位是冗余位，其他是消息位。若消息位的下标中第<span class="math inline">\(k\)</span>个位是<span class="math inline">\(1\)</span>，则该消息位属于第<span class="math inline">\(k\)</span>组。第<span class="math inline">\(k\)</span>个冗余位的值要使第<span class="math inline">\(k\)</span>组中<span class="math inline">\(1\)</span>的个数为偶数，换句话说第<span class="math inline">\(k\)</span>个冗余位就是第<span class="math inline">\(k\)</span>组的奇偶校验位。</p>
+</blockquote>
+<p>Hamming码的描述有些绕，下面给出一个具体例子。</p>
+<p>例：(11,7)Hamming码 原7位消息为1000001，每位分别记为m1,m2,m3,m4,m5,m6,m7 采用11位的Hamming码，其中第0001，0010，0100，1000位是校验位，每位分别记为P1,P2,P3,P4。其他位按顺序插入消息位。</p>
+<p>先分组：m1位实际上是第0011位，因此属于0001组和0010组，m2位是第0101位，属于0001组和0100组。依次类推将消息位分好组。</p>
+<p>求校验码的值：属于0010组的有第0010，0011，0110，0111，1010，1011位，也就是P2,m1,m2,m3,m4,m6,m7，使组1的个数为偶数可算出P2为0，以此类推算出其他校验位的值，可得到编码后的位串是10111001001 下标 1 2 3 4 5 6 7 8 9 10 11 P1 P2 m1 P3 m2 m3 m4 P4 m5 m6 m7 值 1 0 1 1 1 0 0 1 0 0 1</p>
+<p>纠错方法：假设m5因为传输错误变成1，计算各组可发现0001组和1000组中1的个数不是偶数，这说明同时属于0001组和1000组的位(也就是m5)传输错误，将其取反就可恢复到正确的消息。</p>
+<ul>
+<li>注：Hamming码也可用整数拆分的语言来描述，实际上是一回事</li>
+</ul>
+<blockquote>
+<p>定理5：Hamming码的Hamming距离<span class="math inline">\(\ge 3\)</span></p>
+</blockquote>
+<p><em>证明</em>：只需证明不存在Hamming距离为<span class="math inline">\(1\)</span>和<span class="math inline">\(2\)</span>的两个正确位串即可。 由于每个消息位至少属于两组，如果两个正确位串只有<span class="math inline">\(1\)</span>位数据位不同，必定导致两个校验码不同，Hamming距离为3。如果两个正确位串只有<span class="math inline">\(1\)</span>位校验码不同，必定有其一不符合Hamming码的编码规则。因此不存在Hamming距离为<span class="math inline">\(1\)</span>的正确位串。分类讨论还可以证明其他情况。</p>
+<p>这说明Hamming码确实可以纠正至多<span class="math inline">\(1\)</span>位错误的传输</p>
+
+    </div>
+
+    
+    
+    
+
+    <footer class="post-footer">
+          
+
+<div class="post-copyright">
+<ul>
+  <li class="post-copyright-author">
+      <strong>本文作者： </strong>ZZM
+  </li>
+  <li class="post-copyright-link">
+      <strong>本文链接：</strong>
+      <a href="https://piggerzzm.github.io/2019/04/13/Hamming%E7%A0%81/" title="Hamming码">https://piggerzzm.github.io/2019/04/13/Hamming码/</a>
+  </li>
+  <li class="post-copyright-license">
+    <strong>版权声明： </strong>本博客所有文章除特别声明外，均采用 <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/deed.zh" rel="noopener" target="_blank"><i class="fab fa-fw fa-creative-commons"></i>BY-NC-SA</a> 许可协议。转载请注明出处！
+  </li>
+</ul>
+</div>
+
+          <div class="post-tags">
+              <a href="/tags/%E8%AE%A1%E7%AE%97%E6%9C%BA%E7%BD%91%E7%BB%9C/" rel="tag"># 计算机网络</a>
+              <a href="/tags/Hamming%E7%A0%81/" rel="tag"># Hamming码</a>
+          </div>
+
+        
+
+          <div class="post-nav">
+            <div class="post-nav-item">
+                <a href="/2019/04/03/hello-world/" rel="prev" title="Testing Markdown with Hexo">
+                  <i class="fa fa-chevron-left"></i> Testing Markdown with Hexo
+                </a>
+            </div>
+            <div class="post-nav-item">
+                <a href="/2019/04/22/%E8%A7%A3%E5%86%B3Hexo%E5%92%8CMathjax%E7%9A%84%E5%86%B2%E7%AA%81/" rel="next" title="解决Hexo和Mathjax的冲突">
+                  解决Hexo和Mathjax的冲突 <i class="fa fa-chevron-right"></i>
+                </a>
+            </div>
+          </div>
+    </footer>
+  </article>
+</div>
+
+
+
+
+
+
+      
+    <div class="comments" id="valine-comments"></div>
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      const activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      const commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+    </div>
+  </main>
+
+  <footer class="footer">
+    <div class="footer-inner">
+      
+
+      
+
+<div class="copyright">
+  
+  &copy; 2015 – 
+  <span itemprop="copyrightYear">2020</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">ZZM</span>
+</div>
+  <div class="powered-by">由 <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://theme-next.js.org/" class="theme-link" rel="noopener" target="_blank">NexT.Gemini</a> 强力驱动
+  </div>
+
+    </div>
+  </footer>
+
+  
+  <script src="//cdn.jsdelivr.net/npm/animejs@3.2.0/lib/anime.min.js"></script>
+<script src="/js/utils.js"></script><script src="/js/motion.js"></script><script src="/js/next-boot.js"></script>
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+
+
+
+
+
+
+
+  
+
+  
+      <script>
+  if (typeof MathJax === 'undefined') {
+    window.MathJax = {
+      tex: {
+        inlineMath: {'[+]': [['$', '$']]},
+        tags: 'ams'
+      },
+      options: {
+        renderActions: {
+          findScript: [10, doc => {
+            document.querySelectorAll('script[type^="math/tex"]').forEach(node => {
+              const display = !!node.type.match(/; *mode=display/);
+              const math = new doc.options.MathItem(node.textContent, doc.inputJax[0], display);
+              const text = document.createTextNode('');
+              node.parentNode.replaceChild(text, node);
+              math.start = {node: text, delim: '', n: 0};
+              math.end = {node: text, delim: '', n: 0};
+              doc.math.push(math);
+            });
+          }, '', false],
+          insertedScript: [200, () => {
+            document.querySelectorAll('mjx-container').forEach(node => {
+              const target = node.parentNode;
+              if (target.nodeName.toLowerCase() === 'li') {
+                target.parentNode.classList.add('has-jax');
+              }
+            });
+          }, '', false]
+        }
+      }
+    };
+    const script = document.createElement('script');
+    script.src = '//cdn.jsdelivr.net/npm/mathjax@3.1.2/es5/tex-mml-chtml.js';
+    script.defer = true;
+    document.head.appendChild(script);
+  } else {
+    MathJax.startup.document.state(0);
+    MathJax.typesetClear();
+    MathJax.texReset();
+    MathJax.typeset();
+  }
+</script>
+
+    
+
+  
+
+<script>
+NexT.utils.loadComments('#valine-comments', () => {
+  NexT.utils.getScript('//cdn.jsdelivr.net/npm/valine@1.4.14/dist/Valine.min.js', () => {
+    new Valine(Object.assign({"enable":true,"appId":"O43HpTIt69GbGvmdo1zlOrp3-gzGzoHsz","appKey":"Aa5tuTeHefCLzkzICbNgvDmx","serverURLs":null,"placeholder":"Just go go","avatar":"mm","meta":["nick","mail","link"],"pageSize":10,"lang":null,"visitor":true,"comment_count":true,"recordIP":true,"enableQQ":false,"requiredFields":[]}, {
+      el: '#valine-comments',
+      path: "/2019/04/13/Hamming%E7%A0%81/",
+      serverURLs: "https://o43hptit.api.lncldglobal.com"
+    }));
+  }, window.Valine);
+});
+</script>
+
+</body>
+</html>

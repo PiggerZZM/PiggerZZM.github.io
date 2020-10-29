@@ -1,0 +1,576 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 5.2.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+  <link rel="manifest" href="/images/manifest.json">
+  <meta name="msapplication-config" content="/images/browserconfig.xml">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+
+<link rel="stylesheet" href="//cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@5.15.0/css/all.min.css">
+  <link rel="stylesheet" href="//cdn.jsdelivr.net/npm/animate.css@3.1.1/animate.min.css">
+
+<script class="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"piggerzzm.github.io","root":"/","scheme":"Gemini","version":"8.0.1","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12},"copycode":false,"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":true,"nav":null},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"fadeInDown","post_body":"fadeInDown","coll_header":"fadeInLeft","sidebar":"fadeInUp"}},"prism":false,"i18n":{"placeholder":"搜索...","empty":"没有找到任何搜索结果：${query}","hits_time":"找到 ${hits} 个搜索结果（用时 ${time} 毫秒）","hits":"找到 ${hits} 个搜索结果"}};
+  </script>
+
+  <meta name="description" content="教科书般的亵渎 背景介绍 炉石传说里术士有一张非常强力的AOE卡牌“亵渎”  这张牌的效果是：对所有随从造成1点伤害，如果有随从死亡，则再次施放该法术。 在经过仔细地计算之后，即使是非常复杂的场面，也可能通过随从相互进行攻击，构造血量的等差数列，然后使用2费的亵渎达到清场。但在一个回合有限的思考时间里，这“高等术学”并不是那么容易计算出来的。">
+<meta property="og:type" content="article">
+<meta property="og:title" content="教科书般的亵渎">
+<meta property="og:url" content="https://piggerzzm.github.io/2020/02/05/%E6%95%99%E7%A7%91%E4%B9%A6%E8%88%AC%E7%9A%84%E4%BA%B5%E6%B8%8E/index.html">
+<meta property="og:site_name" content="ZZM&#39;s Blog">
+<meta property="og:description" content="教科书般的亵渎 背景介绍 炉石传说里术士有一张非常强力的AOE卡牌“亵渎”  这张牌的效果是：对所有随从造成1点伤害，如果有随从死亡，则再次施放该法术。 在经过仔细地计算之后，即使是非常复杂的场面，也可能通过随从相互进行攻击，构造血量的等差数列，然后使用2费的亵渎达到清场。但在一个回合有限的思考时间里，这“高等术学”并不是那么容易计算出来的。">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://piggerzzm.github.io/images/xiedu.jpg">
+<meta property="article:published_time" content="2020-02-04T16:00:00.000Z">
+<meta property="article:modified_time" content="2020-03-27T16:06:37.500Z">
+<meta property="article:author" content="ZZM">
+<meta property="article:tag" content="算法">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://piggerzzm.github.io/images/xiedu.jpg">
+
+
+<link rel="canonical" href="https://piggerzzm.github.io/2020/02/05/%E6%95%99%E7%A7%91%E4%B9%A6%E8%88%AC%E7%9A%84%E4%BA%B5%E6%B8%8E/">
+
+
+<script class="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>教科书般的亵渎 | ZZM's Blog</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  body { margin-top: 2rem; }
+
+  .use-motion .menu-item,
+  .use-motion .sidebar,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header {
+    visibility: visible;
+  }
+
+  .use-motion .header,
+  .use-motion .site-brand-container .toggle,
+  .use-motion .footer { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle,
+  .use-motion .custom-logo-image {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line {
+    transform: scaleX(1);
+  }
+
+  .search-pop-overlay, .sidebar-nav { display: none; }
+  .sidebar-panel { display: block; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage" class="use-motion">
+  <div class="headband"></div>
+
+  <main class="main">
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <i class="logo-line"></i>
+      <h1 class="site-title">ZZM's Blog</h1>
+      <i class="logo-line"></i>
+    </a>
+      <p class="site-subtitle" itemprop="description">ZZM's Blog</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+    </div>
+  </div>
+</div>
+
+
+
+<nav class="site-nav">
+  <ul class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-about">
+
+    <a href="/about/" rel="section"><i class="fa fa-user fa-fw"></i>关于</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a>
+
+  </li>
+        <li class="menu-item menu-item-schedule">
+
+    <a href="/schedule/" rel="section"><i class="fa fa-calendar fa-fw"></i>日程表</a>
+
+  </li>
+  </ul>
+</nav>
+
+
+
+
+</div>
+        
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+  </div>
+
+  <aside class="sidebar">
+
+    <div class="sidebar-inner sidebar-nav-active sidebar-toc-active">
+      <ul class="sidebar-nav">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <section class="post-toc-wrap sidebar-panel">
+          <div class="post-toc animated"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#%E6%95%99%E7%A7%91%E4%B9%A6%E8%88%AC%E7%9A%84%E4%BA%B5%E6%B8%8E"><span class="nav-number">1.</span> <span class="nav-text">教科书般的亵渎</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E8%83%8C%E6%99%AF%E4%BB%8B%E7%BB%8D"><span class="nav-number">1.1.</span> <span class="nav-text">背景介绍</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%BA%B5%E6%B8%8E%E8%AE%A1%E7%AE%97%E5%99%A8"><span class="nav-number">1.2.</span> <span class="nav-text">亵渎计算器</span></a></li></ol></li></ol></div>
+      </section>
+      <!--/noindex-->
+
+      <section class="site-overview-wrap sidebar-panel">
+        <div class="site-author site-overview-item animated" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="ZZM"
+      src="/images/ZZM.jpg">
+  <p class="site-author-name" itemprop="name">ZZM</p>
+  <div class="site-description" itemprop="description">description</div>
+</div>
+<div class="site-state-wrap site-overview-item animated">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">14</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">5</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">15</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author site-overview-item animated">
+      <span class="links-of-author-item">
+        <a href="https://github.com/PiggerZZM" title="GitHub → https:&#x2F;&#x2F;github.com&#x2F;PiggerZZM" rel="noopener" target="_blank"><i class="fab fa-github fa-fw"></i>GitHub</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="/442823793@qq.com" title="E-Mail → 442823793@qq.com"><i class="fa fa-envelope fa-fw"></i>E-Mail</a>
+      </span>
+  </div>
+  <div class="cc-license site-overview-item animated" itemprop="license">
+    <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/deed.zh" class="cc-opacity" rel="noopener" target="_blank"><img src="/images/cc-by-nc-sa.svg" alt="Creative Commons"></a>
+  </div>
+
+
+
+      </section>
+    </div>
+  </aside>
+  <div class="sidebar-dimmer"></div>
+
+
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+
+<noscript>
+  <div class="noscript-warning">Theme NexT works best with JavaScript enabled</div>
+</noscript>
+
+
+    <div class="main-inner post posts-expand">
+      
+
+      
+
+  
+
+
+<div class="post-block">
+  
+  
+
+  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://piggerzzm.github.io/2020/02/05/%E6%95%99%E7%A7%91%E4%B9%A6%E8%88%AC%E7%9A%84%E4%BA%B5%E6%B8%8E/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/ZZM.jpg">
+      <meta itemprop="name" content="ZZM">
+      <meta itemprop="description" content="description">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="ZZM's Blog">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          教科书般的亵渎
+        </h1>
+
+        <div class="post-meta-container">
+          <div class="post-meta">
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar"></i>
+      </span>
+      <span class="post-meta-item-text">发表于</span>
+
+      <time title="创建时间：2020-02-05 00:00:00" itemprop="dateCreated datePublished" datetime="2020-02-05T00:00:00+08:00">2020-02-05</time>
+    </span>
+      <span class="post-meta-item">
+        <span class="post-meta-item-icon">
+          <i class="far fa-calendar-check"></i>
+        </span>
+        <span class="post-meta-item-text">更新于</span>
+        <time title="修改时间：2020-03-28 00:06:37" itemprop="dateModified" datetime="2020-03-28T00:06:37+08:00">2020-03-28</time>
+      </span>
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-folder"></i>
+      </span>
+      <span class="post-meta-item-text">分类于</span>
+        <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+          <a href="/categories/%E8%AE%A1%E7%AE%97%E6%9C%BA%E7%A7%91%E5%AD%A6/" itemprop="url" rel="index"><span itemprop="name">计算机科学</span></a>
+        </span>
+    </span>
+
+  
+    <span id="/2020/02/05/%E6%95%99%E7%A7%91%E4%B9%A6%E8%88%AC%E7%9A%84%E4%BA%B5%E6%B8%8E/" class="post-meta-item leancloud_visitors" data-flag-title="教科书般的亵渎" title="阅读次数">
+      <span class="post-meta-item-icon">
+        <i class="far fa-eye"></i>
+      </span>
+      <span class="post-meta-item-text">阅读次数：</span>
+      <span class="leancloud-visitors-count"></span>
+    </span>
+  
+  <span class="post-meta-item">
+    
+      <span class="post-meta-item-icon">
+        <i class="far fa-comment"></i>
+      </span>
+      <span class="post-meta-item-text">Valine：</span>
+    
+    <a title="valine" href="/2020/02/05/%E6%95%99%E7%A7%91%E4%B9%A6%E8%88%AC%E7%9A%84%E4%BA%B5%E6%B8%8E/#valine-comments" itemprop="discussionUrl">
+      <span class="post-comments-count valine-comment-count" data-xid="/2020/02/05/%E6%95%99%E7%A7%91%E4%B9%A6%E8%88%AC%E7%9A%84%E4%BA%B5%E6%B8%8E/" itemprop="commentCount"></span>
+    </a>
+  </span>
+  
+  
+</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+        <h1 id="教科书般的亵渎">教科书般的亵渎</h1>
+<h2 id="背景介绍">背景介绍</h2>
+<p>炉石传说里术士有一张非常强力的AOE卡牌“亵渎”</p>
+<p><img src="/images/xiedu.jpg" align=center /></p>
+<p>这张牌的效果是：对所有随从造成1点伤害，如果有随从死亡，则再次施放该法术。</p>
+<p>在经过仔细地计算之后，即使是非常复杂的场面，也可能通过随从相互进行攻击，构造血量的等差数列，然后使用2费的亵渎达到清场。但在一个回合有限的思考时间里，这“高等术学”并不是那么容易计算出来的。</p>
+<a id="more"></a>
+<h2 id="亵渎计算器">亵渎计算器</h2>
+<p>在编写亵渎计算器之前，先把这个问题描述清楚：</p>
+<blockquote>
+<p>输入：给定敌方和我方不多于7个随从的攻击力、生命值、是否具有嘲讽、我方该随从本回合是否能进行攻击（暂时不考虑亡语、圣盾、风怒、复生等复杂的效果）</p>
+<p>输出：所有全清场面的我方随从攻击方案</p>
+</blockquote>
+<p>下面用Python3.7来实现：</p>
+<p>先写一些测试用例和全局变量</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line">a2 = [<span class="number">1</span>, <span class="number">2</span>, <span class="number">3</span>] <span class="comment"># 敌方随从攻击力</span></span><br><span class="line">h2 = [<span class="number">2</span>, <span class="number">4</span>, <span class="number">4</span>] <span class="comment"># 敌方随从生命值</span></span><br><span class="line">taunt = [<span class="number">0</span>, <span class="number">1</span>, <span class="number">0</span>] <span class="comment"># 敌方随从是否具有嘲讽</span></span><br><span class="line"></span><br><span class="line">a1 = [<span class="number">1</span>, <span class="number">1</span>] <span class="comment"># 我方随从攻击力</span></span><br><span class="line">h1 = [<span class="number">1</span>, <span class="number">2</span>] <span class="comment"># 我方随从生命值</span></span><br><span class="line"></span><br><span class="line">flag = <span class="literal">False</span> <span class="comment"># 是否有解</span></span><br><span class="line">attack_record = [] <span class="comment"># 用一个栈记录攻击</span></span><br><span class="line">H1 = h1[:]</span><br><span class="line">H2 = h2[:]</span><br><span class="line">num_of_solutions = <span class="number">0</span></span><br></pre></td></tr></table></figure>
+<p>然后写一个判断等差数列的函数，h1和h2是存储敌方和我方随从生命值的列表，判断是否构成等差数列</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">is_AP</span>(<span class="params">h1, h2</span>):</span></span><br><span class="line">    maxH = <span class="built_in">max</span>(<span class="built_in">max</span>(h1), <span class="built_in">max</span>(h2))</span><br><span class="line">    <span class="keyword">for</span> i <span class="keyword">in</span> <span class="built_in">range</span>(<span class="number">1</span>, maxH):</span><br><span class="line">        <span class="keyword">if</span> i <span class="keyword">not</span> <span class="keyword">in</span> h1 <span class="keyword">and</span> i <span class="keyword">not</span> <span class="keyword">in</span> h2:</span><br><span class="line">            <span class="keyword">return</span> <span class="literal">False</span></span><br><span class="line">    <span class="keyword">return</span> <span class="literal">True</span></span><br></pre></td></tr></table></figure>
+<p>再写一个主函数，如果初始就构成了等差数列就直接输出，不进行DFS；如果不构成等差数列，则进行DFS</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">main</span>():</span></span><br><span class="line">    num_of_taunt = <span class="built_in">sum</span>(taunt)</span><br><span class="line">    <span class="keyword">if</span> is_AP(H1, H2):</span><br><span class="line">        print(attack_record)</span><br><span class="line">        print(H2)</span><br><span class="line">        print(H1)</span><br><span class="line">        print(<span class="string">&quot;number of solutions: 1&quot;</span> )</span><br><span class="line">    <span class="keyword">else</span>:</span><br><span class="line">        DFS(<span class="number">0</span>, <span class="number">0</span>, num_of_taunt)</span><br><span class="line">        <span class="keyword">if</span> flag == <span class="literal">False</span>:</span><br><span class="line">            print(<span class="string">&quot;No Solution.&quot;</span>)</span><br><span class="line">        print(<span class="string">&quot;number of solutions: &quot;</span> + <span class="built_in">str</span>(num_of_solutions))</span><br></pre></td></tr></table></figure>
+<p>然后是DFS的实现：</p>
+<p>这里需要传入的参数有三个，k1和k2分别代表我方和敌方的随从序号，num_of_taunt是敌方场上嘲讽随从的数量（这个会影响是否能进行攻击所以要记录）</p>
+<p>分支分为两类：我方k1攻击敌方k2，我方k1不攻击敌方k2</p>
+<p>攻击分支：根据两个随从的生命值以及场上嘲讽的情况来进行剪枝</p>
+<p>不攻击分支：要根据是否还有下一个敌方随从来进行判断</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">DFS</span>(<span class="params">k1, k2, num_of_taunt</span>):</span></span><br><span class="line">    <span class="comment"># 已经构成等差数列</span></span><br><span class="line">    <span class="keyword">if</span> is_AP(H1, H2):</span><br><span class="line">        <span class="keyword">global</span> flag</span><br><span class="line">        flag = <span class="literal">True</span> <span class="comment"># 有解</span></span><br><span class="line">        <span class="keyword">global</span> num_of_solutions</span><br><span class="line">        num_of_solutions = num_of_solutions + <span class="number">1</span></span><br><span class="line"></span><br><span class="line">        print(attack_record)</span><br><span class="line">        print(H2)</span><br><span class="line">        print(H1)</span><br><span class="line">        print(<span class="string">&#x27;\n&#x27;</span>)</span><br><span class="line"></span><br><span class="line">    <span class="comment"># 递归边界</span></span><br><span class="line">    <span class="keyword">if</span> k1 &gt;= <span class="built_in">len</span>(H1):</span><br><span class="line">        <span class="keyword">return</span></span><br><span class="line">    </span><br><span class="line">    <span class="comment"># k1撞k2</span></span><br><span class="line">    <span class="keyword">if</span> H1[k1] &gt;= <span class="number">0</span> <span class="keyword">and</span> H2[k2] &gt;= <span class="number">0</span>: <span class="comment"># 生命值不为负才能攻击</span></span><br><span class="line">        <span class="keyword">if</span> num_of_taunt == <span class="number">0</span> <span class="keyword">or</span> taunt[k2]: <span class="comment"># 没有嘲讽随从或k2是嘲讽随从</span></span><br><span class="line">            attack(k1, k2, num_of_taunt)</span><br><span class="line"></span><br><span class="line">    <span class="comment"># k1不撞k2</span></span><br><span class="line">    <span class="keyword">if</span> k2+<span class="number">1</span> &lt; <span class="built_in">len</span>(H2): <span class="comment"># 还有下一个敌方随从</span></span><br><span class="line">        DFS(k1, k2+<span class="number">1</span>, num_of_taunt)</span><br><span class="line">    <span class="keyword">elif</span> k1+<span class="number">1</span> &lt; <span class="built_in">len</span>(H1): <span class="comment"># 没有下一个敌方随从</span></span><br><span class="line">        DFS(k1+<span class="number">1</span>, <span class="number">0</span>, num_of_taunt)</span><br></pre></td></tr></table></figure>
+<p>最后是攻击分支的具体实现：需要判断攻击之后是否会对敌方嘲讽状况发生影响</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">attack</span>(<span class="params">k1, k2, num_of_taunt</span>):</span></span><br><span class="line">    H1[k1] = H1[k1] - a2[k2]</span><br><span class="line">    H2[k2] = H2[k2] - a1[k1]</span><br><span class="line">    attack_record.append(<span class="built_in">str</span>(k1) + <span class="string">&quot; attack &quot;</span> + <span class="built_in">str</span>(k2))</span><br><span class="line">    <span class="keyword">if</span> taunt[k2] <span class="keyword">and</span> H2[k2] &lt;= <span class="number">0</span>:</span><br><span class="line">        DFS(k1+<span class="number">1</span>, <span class="number">0</span>, num_of_taunt - <span class="number">1</span>)</span><br><span class="line">    <span class="keyword">else</span>:</span><br><span class="line">        DFS(k1+<span class="number">1</span>, <span class="number">0</span>, num_of_taunt)</span><br><span class="line">    attack_record.pop(<span class="number">-1</span>)</span><br><span class="line">    H1[k1] = H1[k1] + a2[k2]</span><br><span class="line">    H2[k2] = H2[k2] + a1[k1]</span><br></pre></td></tr></table></figure>
+<p>程序输出如下：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">[<span class="string">&#x27;1 attack 1&#x27;</span>]</span><br><span class="line">[<span class="number">2</span>, <span class="number">3</span>, <span class="number">4</span>]</span><br><span class="line">[<span class="number">1</span>, <span class="number">0</span>]</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">number of solutions: <span class="number">1</span></span><br></pre></td></tr></table></figure>
+<p>敌方1号随从嘲讽，容易验证的确只有这一个解：我方1号随从攻击敌方1号随从，然后使用亵渎全解</p>
+<p>第二、三行输出显示亵渎前敌方和我方随从剩余生命值，的确构成等差数列</p>
+
+    </div>
+
+    
+    
+    
+
+    <footer class="post-footer">
+          
+
+<div class="post-copyright">
+<ul>
+  <li class="post-copyright-author">
+      <strong>本文作者： </strong>ZZM
+  </li>
+  <li class="post-copyright-link">
+      <strong>本文链接：</strong>
+      <a href="https://piggerzzm.github.io/2020/02/05/%E6%95%99%E7%A7%91%E4%B9%A6%E8%88%AC%E7%9A%84%E4%BA%B5%E6%B8%8E/" title="教科书般的亵渎">https://piggerzzm.github.io/2020/02/05/教科书般的亵渎/</a>
+  </li>
+  <li class="post-copyright-license">
+    <strong>版权声明： </strong>本博客所有文章除特别声明外，均采用 <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/deed.zh" rel="noopener" target="_blank"><i class="fab fa-fw fa-creative-commons"></i>BY-NC-SA</a> 许可协议。转载请注明出处！
+  </li>
+</ul>
+</div>
+
+          <div class="post-tags">
+              <a href="/tags/%E7%AE%97%E6%B3%95/" rel="tag"># 算法</a>
+          </div>
+
+        
+
+          <div class="post-nav">
+            <div class="post-nav-item">
+                <a href="/2020/02/01/SEIR/" rel="prev" title="SEIR模型简介">
+                  <i class="fa fa-chevron-left"></i> SEIR模型简介
+                </a>
+            </div>
+            <div class="post-nav-item">
+                <a href="/2020/03/22/Hungary/" rel="next" title="匈牙利算法">
+                  匈牙利算法 <i class="fa fa-chevron-right"></i>
+                </a>
+            </div>
+          </div>
+    </footer>
+  </article>
+</div>
+
+
+
+
+
+
+      
+    <div class="comments" id="valine-comments"></div>
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      const activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      const commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+    </div>
+  </main>
+
+  <footer class="footer">
+    <div class="footer-inner">
+      
+
+      
+
+<div class="copyright">
+  
+  &copy; 2015 – 
+  <span itemprop="copyrightYear">2020</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">ZZM</span>
+</div>
+  <div class="powered-by">由 <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://theme-next.js.org/" class="theme-link" rel="noopener" target="_blank">NexT.Gemini</a> 强力驱动
+  </div>
+
+    </div>
+  </footer>
+
+  
+  <script src="//cdn.jsdelivr.net/npm/animejs@3.2.0/lib/anime.min.js"></script>
+<script src="/js/utils.js"></script><script src="/js/motion.js"></script><script src="/js/next-boot.js"></script>
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+
+
+
+
+
+
+
+  
+
+  
+      <script>
+  if (typeof MathJax === 'undefined') {
+    window.MathJax = {
+      tex: {
+        inlineMath: {'[+]': [['$', '$']]},
+        tags: 'ams'
+      },
+      options: {
+        renderActions: {
+          findScript: [10, doc => {
+            document.querySelectorAll('script[type^="math/tex"]').forEach(node => {
+              const display = !!node.type.match(/; *mode=display/);
+              const math = new doc.options.MathItem(node.textContent, doc.inputJax[0], display);
+              const text = document.createTextNode('');
+              node.parentNode.replaceChild(text, node);
+              math.start = {node: text, delim: '', n: 0};
+              math.end = {node: text, delim: '', n: 0};
+              doc.math.push(math);
+            });
+          }, '', false],
+          insertedScript: [200, () => {
+            document.querySelectorAll('mjx-container').forEach(node => {
+              const target = node.parentNode;
+              if (target.nodeName.toLowerCase() === 'li') {
+                target.parentNode.classList.add('has-jax');
+              }
+            });
+          }, '', false]
+        }
+      }
+    };
+    const script = document.createElement('script');
+    script.src = '//cdn.jsdelivr.net/npm/mathjax@3.1.2/es5/tex-mml-chtml.js';
+    script.defer = true;
+    document.head.appendChild(script);
+  } else {
+    MathJax.startup.document.state(0);
+    MathJax.typesetClear();
+    MathJax.texReset();
+    MathJax.typeset();
+  }
+</script>
+
+    
+
+  
+
+<script>
+NexT.utils.loadComments('#valine-comments', () => {
+  NexT.utils.getScript('//cdn.jsdelivr.net/npm/valine@1.4.14/dist/Valine.min.js', () => {
+    new Valine(Object.assign({"enable":true,"appId":"O43HpTIt69GbGvmdo1zlOrp3-gzGzoHsz","appKey":"Aa5tuTeHefCLzkzICbNgvDmx","serverURLs":null,"placeholder":"Just go go","avatar":"mm","meta":["nick","mail","link"],"pageSize":10,"lang":null,"visitor":true,"comment_count":true,"recordIP":true,"enableQQ":false,"requiredFields":[]}, {
+      el: '#valine-comments',
+      path: "/2020/02/05/%E6%95%99%E7%A7%91%E4%B9%A6%E8%88%AC%E7%9A%84%E4%BA%B5%E6%B8%8E/",
+      serverURLs: "https://o43hptit.api.lncldglobal.com"
+    }));
+  }, window.Valine);
+});
+</script>
+
+</body>
+</html>

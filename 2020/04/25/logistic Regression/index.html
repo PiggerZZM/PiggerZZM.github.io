@@ -1,0 +1,627 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 5.2.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+  <link rel="manifest" href="/images/manifest.json">
+  <meta name="msapplication-config" content="/images/browserconfig.xml">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+
+<link rel="stylesheet" href="//cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@5.15.0/css/all.min.css">
+  <link rel="stylesheet" href="//cdn.jsdelivr.net/npm/animate.css@3.1.1/animate.min.css">
+
+<script class="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"piggerzzm.github.io","root":"/","scheme":"Gemini","version":"8.0.1","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12},"copycode":false,"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":true,"nav":null},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"fadeInDown","post_body":"fadeInDown","coll_header":"fadeInLeft","sidebar":"fadeInUp"}},"prism":false,"i18n":{"placeholder":"搜索...","empty":"没有找到任何搜索结果：${query}","hits_time":"找到 ${hits} 个搜索结果（用时 ${time} 毫秒）","hits":"找到 ${hits} 个搜索结果"}};
+  </script>
+
+  <meta name="description" content="Logistic Regression小结 总结一下Logistic Regression。  参考文献：西瓜书，Coursera 《Machine learning》 吴恩达">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Logistic Regression小结">
+<meta property="og:url" content="https://piggerzzm.github.io/2020/04/25/logistic%20Regression/index.html">
+<meta property="og:site_name" content="ZZM&#39;s Blog">
+<meta property="og:description" content="Logistic Regression小结 总结一下Logistic Regression。  参考文献：西瓜书，Coursera 《Machine learning》 吴恩达">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://piggerzzm.github.io/images/logistic.jpg">
+<meta property="article:published_time" content="2020-04-24T16:00:00.000Z">
+<meta property="article:modified_time" content="2020-06-01T12:32:42.442Z">
+<meta property="article:author" content="ZZM">
+<meta property="article:tag" content="机器学习">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://piggerzzm.github.io/images/logistic.jpg">
+
+
+<link rel="canonical" href="https://piggerzzm.github.io/2020/04/25/logistic%20Regression/">
+
+
+<script class="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>Logistic Regression小结 | ZZM's Blog</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  body { margin-top: 2rem; }
+
+  .use-motion .menu-item,
+  .use-motion .sidebar,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header {
+    visibility: visible;
+  }
+
+  .use-motion .header,
+  .use-motion .site-brand-container .toggle,
+  .use-motion .footer { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle,
+  .use-motion .custom-logo-image {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line {
+    transform: scaleX(1);
+  }
+
+  .search-pop-overlay, .sidebar-nav { display: none; }
+  .sidebar-panel { display: block; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage" class="use-motion">
+  <div class="headband"></div>
+
+  <main class="main">
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <i class="logo-line"></i>
+      <h1 class="site-title">ZZM's Blog</h1>
+      <i class="logo-line"></i>
+    </a>
+      <p class="site-subtitle" itemprop="description">ZZM's Blog</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+    </div>
+  </div>
+</div>
+
+
+
+<nav class="site-nav">
+  <ul class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-about">
+
+    <a href="/about/" rel="section"><i class="fa fa-user fa-fw"></i>关于</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a>
+
+  </li>
+        <li class="menu-item menu-item-schedule">
+
+    <a href="/schedule/" rel="section"><i class="fa fa-calendar fa-fw"></i>日程表</a>
+
+  </li>
+  </ul>
+</nav>
+
+
+
+
+</div>
+        
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+  </div>
+
+  <aside class="sidebar">
+
+    <div class="sidebar-inner sidebar-nav-active sidebar-toc-active">
+      <ul class="sidebar-nav">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <section class="post-toc-wrap sidebar-panel">
+          <div class="post-toc animated"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#logistic-regression%E5%B0%8F%E7%BB%93"><span class="nav-number">1.</span> <span class="nav-text">Logistic Regression小结</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%BA%8C%E5%88%86%E7%B1%BB%E4%BB%BB%E5%8A%A1"><span class="nav-number">1.1.</span> <span class="nav-text">二分类任务</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#logistic-regression%E7%9A%84%E5%81%87%E8%AE%BE%E5%87%BD%E6%95%B0%E5%AF%B9%E6%95%B0%E5%87%A0%E7%8E%87%E5%87%BD%E6%95%B0"><span class="nav-number">1.2.</span> <span class="nav-text">Logistic Regression的假设函数——对数几率函数</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#logistic-regression%E7%9A%84%E8%AE%AD%E7%BB%83%E6%96%B9%E6%B3%95%E6%9E%81%E5%A4%A7%E4%BC%BC%E7%84%B6%E4%BC%B0%E8%AE%A1"><span class="nav-number">1.3.</span> <span class="nav-text">Logistic Regression的训练方法——极大似然估计</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#logistic-regression%E7%9A%84%E6%8D%9F%E5%A4%B1%E5%87%BD%E6%95%B0%E4%BA%A4%E5%8F%89%E7%86%B5"><span class="nav-number">1.4.</span> <span class="nav-text">Logistic Regression的损失函数——交叉熵</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%86%B3%E7%AD%96%E8%BE%B9%E7%95%8C"><span class="nav-number">1.5.</span> <span class="nav-text">决策边界</span></a></li></ol></li></ol></div>
+      </section>
+      <!--/noindex-->
+
+      <section class="site-overview-wrap sidebar-panel">
+        <div class="site-author site-overview-item animated" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="ZZM"
+      src="/images/ZZM.jpg">
+  <p class="site-author-name" itemprop="name">ZZM</p>
+  <div class="site-description" itemprop="description">description</div>
+</div>
+<div class="site-state-wrap site-overview-item animated">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">14</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">5</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">15</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author site-overview-item animated">
+      <span class="links-of-author-item">
+        <a href="https://github.com/PiggerZZM" title="GitHub → https:&#x2F;&#x2F;github.com&#x2F;PiggerZZM" rel="noopener" target="_blank"><i class="fab fa-github fa-fw"></i>GitHub</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="/442823793@qq.com" title="E-Mail → 442823793@qq.com"><i class="fa fa-envelope fa-fw"></i>E-Mail</a>
+      </span>
+  </div>
+  <div class="cc-license site-overview-item animated" itemprop="license">
+    <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/deed.zh" class="cc-opacity" rel="noopener" target="_blank"><img src="/images/cc-by-nc-sa.svg" alt="Creative Commons"></a>
+  </div>
+
+
+
+      </section>
+    </div>
+  </aside>
+  <div class="sidebar-dimmer"></div>
+
+
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+
+<noscript>
+  <div class="noscript-warning">Theme NexT works best with JavaScript enabled</div>
+</noscript>
+
+
+    <div class="main-inner post posts-expand">
+      
+
+      
+
+  
+
+
+<div class="post-block">
+  
+  
+
+  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://piggerzzm.github.io/2020/04/25/logistic%20Regression/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/ZZM.jpg">
+      <meta itemprop="name" content="ZZM">
+      <meta itemprop="description" content="description">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="ZZM's Blog">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          Logistic Regression小结
+        </h1>
+
+        <div class="post-meta-container">
+          <div class="post-meta">
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar"></i>
+      </span>
+      <span class="post-meta-item-text">发表于</span>
+
+      <time title="创建时间：2020-04-25 00:00:00" itemprop="dateCreated datePublished" datetime="2020-04-25T00:00:00+08:00">2020-04-25</time>
+    </span>
+      <span class="post-meta-item">
+        <span class="post-meta-item-icon">
+          <i class="far fa-calendar-check"></i>
+        </span>
+        <span class="post-meta-item-text">更新于</span>
+        <time title="修改时间：2020-06-01 20:32:42" itemprop="dateModified" datetime="2020-06-01T20:32:42+08:00">2020-06-01</time>
+      </span>
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-folder"></i>
+      </span>
+      <span class="post-meta-item-text">分类于</span>
+        <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+          <a href="/categories/%E8%AE%A1%E7%AE%97%E6%9C%BA%E7%A7%91%E5%AD%A6/" itemprop="url" rel="index"><span itemprop="name">计算机科学</span></a>
+        </span>
+    </span>
+
+  
+    <span id="/2020/04/25/logistic%20Regression/" class="post-meta-item leancloud_visitors" data-flag-title="Logistic Regression小结" title="阅读次数">
+      <span class="post-meta-item-icon">
+        <i class="far fa-eye"></i>
+      </span>
+      <span class="post-meta-item-text">阅读次数：</span>
+      <span class="leancloud-visitors-count"></span>
+    </span>
+  
+  <span class="post-meta-item">
+    
+      <span class="post-meta-item-icon">
+        <i class="far fa-comment"></i>
+      </span>
+      <span class="post-meta-item-text">Valine：</span>
+    
+    <a title="valine" href="/2020/04/25/logistic%20Regression/#valine-comments" itemprop="discussionUrl">
+      <span class="post-comments-count valine-comment-count" data-xid="/2020/04/25/logistic%20Regression/" itemprop="commentCount"></span>
+    </a>
+  </span>
+  
+  
+</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+        <h1 id="logistic-regression小结">Logistic Regression小结</h1>
+<p>总结一下Logistic Regression。</p>
+<blockquote>
+<p>参考文献：西瓜书，Coursera 《Machine learning》 吴恩达</p>
+</blockquote>
+<a id="more"></a>
+<h2 id="二分类任务">二分类任务</h2>
+<p>给定数据集<span class="math inline">\(D=\{(\boldsymbol{x}_i,y_i)\}_{i=1}^m\)</span>，其中<span class="math inline">\(\boldsymbol{x}_i \in \mathbb{R}^n\)</span>为样本，<span class="math inline">\(y_i\in \{0,1\}\)</span>分别代表正类和反类的标记。训练一个分类器<span class="math inline">\(f:\mathbb{R}^n \to \{0,1\}\)</span>。</p>
+<p>Logistic Regression是用来解决二分类任务的一种分类器，经过一些修改也可以用作多分类问题。</p>
+<h2 id="logistic-regression的假设函数对数几率函数">Logistic Regression的假设函数——对数几率函数</h2>
+<p>Logistic Regression的想法是用广义线性回归模型来解决二分类问题，首先要找一个假设函数<span class="math inline">\(f:\mathbb{R}^n \to \{0,1\}\)</span>来做拟合。值域是一个离散的集合<span class="math inline">\(\{0,1\}\)</span>，最理想的假设函数应当是单位阶跃函数，即</p>
+<p><span class="math display">\[
+f(x) =
+\begin{cases}
+1,  &amp; x&gt;0 \\
+0.5, &amp; x=0 \\
+0, &amp; x&lt;0
+\end{cases}
+\]</span></p>
+<p>很明显，这个函数不光滑甚至不连续，如果用它会出现很多问题。Logistic Regression采用了对数几率函数(logistic function)来替代它：</p>
+<p><span class="math display">\[
+f(x) = \frac{1}{1+e^{-x}}
+\]</span></p>
+<p>容易看出对数几率函数的值域是<span class="math inline">\((0,1)\)</span>，而且它在<span class="math inline">\(x=0\)</span>处的斜率非常大。（注意：值域中的0和1是取不到的）</p>
+<p><img src="/images/logistic.jpg" width="500" hegiht="313" align=center /></p>
+<p>给这个对数几率函数加上待训练的参数<span class="math inline">\(\boldsymbol{w}\)</span>和<span class="math inline">\(b\)</span>，就得到了我们需要的假设函数：</p>
+<p><span class="math display">\[
+f(\boldsymbol{x}) = \frac{1}{1 + e^{-( \boldsymbol{w}^T \boldsymbol{x} + b ) }}
+\]</span></p>
+<h2 id="logistic-regression的训练方法极大似然估计">Logistic Regression的训练方法——极大似然估计</h2>
+<p>回归问题估计参数一般的方法是最小二乘法，但是注意到这个分类器的值域是取不到<span class="math inline">\(0\)</span>和<span class="math inline">\(1\)</span>的，训练集里所有样本的“对数几率”都是无穷，也就是说，最小二乘法失效了。</p>
+<ul>
+<li>由此也可以看出，Logistic Regression并不是严格意义上的回归模型，它叫做Regression只是因为历史原因而已。</li>
+</ul>
+<p>Logistic Regression里一个关键的处理是把输出<span class="math inline">\(f(\boldsymbol{x})\)</span>视为样本<span class="math inline">\(\boldsymbol{x}\)</span>属于正类的概率。用数学来表达就是<span class="math inline">\(f(\boldsymbol{x}) = P(y=1|\boldsymbol{x})\)</span>。</p>
+<p>这样我们就得到了随机变量<span class="math inline">\(y\in \{0, 1\}\)</span>关于<span class="math inline">\(\boldsymbol{x}\)</span>的以<span class="math inline">\(\boldsymbol{w}\)</span>和<span class="math inline">\(b\)</span>为参数的条件分布：</p>
+<p><span class="math display">\[
+p(y=1|\boldsymbol{x}) = \frac{e^{\boldsymbol{w}^T \boldsymbol{x}+b}}{1+e^{\boldsymbol{w}^T \boldsymbol{x}+b}}
+\]</span></p>
+<p><span class="math display">\[
+p(y=0|\boldsymbol{x}) = \frac{1}{1+e^{\boldsymbol{w}^T \boldsymbol{x}+b}}
+\]</span></p>
+<p>接下来用极大似然估计来估计参数<span class="math inline">\(\boldsymbol{w}\)</span>和<span class="math inline">\(b\)</span>（这里假设了样本独立同分布），其对数似然函数为 <span class="math display">\[
+l(\boldsymbol{w},b) = ln(p(\boldsymbol{y}|\mathbf{x})) = ln(\prod_{i=1}^m p(y_i|\boldsymbol{x}_i;\boldsymbol{w},b)) = \sum_{i=1}^m ln(p(y_i|\boldsymbol{x}_i;\boldsymbol{w},b))
+\]</span></p>
+<p>然后调整一下记号，并简化一下对数似然函数。</p>
+<p>令<span class="math inline">\(\boldsymbol{\beta} = (\boldsymbol{w};b)\)</span>，<span class="math inline">\(\hat{\boldsymbol{x}} = (\boldsymbol{x};1)\)</span>，则有<span class="math inline">\(\boldsymbol{w}^T\boldsymbol{x}+b=\boldsymbol{\beta}^T\boldsymbol{x}\)</span>。再记<span class="math inline">\(p_1(\hat{\boldsymbol{x}};\boldsymbol{\beta}) = p(y=1|\hat{\boldsymbol{x}},\boldsymbol{\beta})\)</span> ，<span class="math inline">\(p_0(\hat{\boldsymbol{x}};\boldsymbol{\beta}) = p(y=0|\hat{\boldsymbol{x}},\boldsymbol{\beta})\)</span></p>
+<p>注意到<span class="math inline">\(y\in \{0,1\}\)</span>，则对数似然函数可简化为： <span class="math display">\[
+l(\boldsymbol{w},b) = 
+\sum_{i=1}^m
+ln((y_i p_1(\hat{\boldsymbol{x}};\boldsymbol{\beta})) + (1-y_i)p_0(\hat{\boldsymbol{x}};\boldsymbol{\beta}))
+\]</span></p>
+<p>最大化对数似然函数可等价于最小化其相反数，将<span class="math inline">\(y\)</span>的条件带入后可得到如下优化问题： <span class="math display">\[
+(w^*, \boldsymbol{\beta}^*) =  
+\arg \min_{w,\boldsymbol{\beta}}  \sum_{i=1}^m(-y_i\boldsymbol{\beta}^T\hat{\boldsymbol{x}_i}+ln(1+e^{\boldsymbol{\beta}^T\boldsymbol{\hat{x}_i}}))
+\]</span></p>
+<ul>
+<li>可以证明<span class="math inline">\(l(w, \boldsymbol{\beta})\)</span>是凸函数，可以使用数值优化算法如牛顿法、梯度下降法等求得最优解。</li>
+</ul>
+<h2 id="logistic-regression的损失函数交叉熵">Logistic Regression的损失函数——交叉熵</h2>
+<p>对数似然函数<span class="math inline">\(l(\boldsymbol{w},b)\)</span>还有另外一种化简的方法： <span class="math display">\[
+l(\boldsymbol{w},b) = \sum_{i=1}^m ln(p_1(\hat{\boldsymbol{x}};\boldsymbol{\beta})^{y_i}p_0(\hat{\boldsymbol{x}};\boldsymbol{\beta})^{(1-y_i)})
+= \sum_{i=1}^m y_iln(p_1(\hat{\boldsymbol{x}};\boldsymbol{\beta}))+(1-y_i)ln(p_0(\hat{\boldsymbol{x}};\boldsymbol{\beta}))
+\]</span> 用这种化简方法同样可以推导出上面的最小化问题。可以看到，Logistic Regression采用的损失函数是交叉熵（cross entropy） <span class="math display">\[
+Cost(f(\boldsymbol{x}), y) = -yln(f(\boldsymbol{x})) - (1-y)ln(1-f(\boldsymbol{x}))
+\]</span> 代价函数<span class="math inline">\(J\)</span>为对数似然函数的相反数<span class="math inline">\(-l(\boldsymbol{w},b)\)</span>： <span class="math display">\[
+J = \sum_{i=1}^m Cost(f(\boldsymbol{x_i}), y_i) 
+= \sum_{i=1}^m (-y_iln(f(\boldsymbol{x_i})) - (1-y_i)ln(1-f(\boldsymbol{x_i})))
+= -l(\boldsymbol{w},b)
+\]</span> 研究交叉熵损失<span class="math inline">\(Cost(f(\boldsymbol{x}), y)\)</span>关于<span class="math inline">\(f(\boldsymbol{x})\)</span>在一维情形<span class="math inline">\(x\in \mathbb{R}\)</span>的图像容易发现，它的性质是：</p>
+<ol type="1">
+<li>当<span class="math inline">\(y=1\)</span>时，如果<span class="math inline">\(f(x)=1\)</span>，则<span class="math inline">\(Cost=0\)</span>；如果<span class="math inline">\(f(x)=0\)</span>，则<span class="math inline">\(Cost=+\infin\)</span></li>
+<li>当<span class="math inline">\(y=0\)</span>时，如果<span class="math inline">\(f(x)=0\)</span>，则<span class="math inline">\(Cost=0\)</span>；如果<span class="math inline">\(f(x)=1\)</span>，则<span class="math inline">\(Cost=+\infin\)</span></li>
+</ol>
+<p>所以交叉熵损失有这样的特点：分类错误的代价为无穷大，分类正确的代价为0.</p>
+<h2 id="决策边界">决策边界</h2>
+<p>因为我们把Logistic Regression分类器的输出视作属于正类的概率，在类别均衡情况下，分类器的输出大于0.5时将其预测为正类，反之将其预测为反类。</p>
+<p>观察<span class="math inline">\(f(\boldsymbol{x}) = \frac{1}{1 + e^{-( \boldsymbol{w}^T \boldsymbol{x} + b ) }}\)</span>的特点：当<span class="math inline">\(\boldsymbol{w}^T\boldsymbol{x} + b \ge 0\)</span>时，有<span class="math inline">\(f(\boldsymbol{x}) \ge 0.5\)</span>；当<span class="math inline">\(\boldsymbol{w}^T\boldsymbol{x} + b &lt; 0\)</span>时，有<span class="math inline">\(f(\boldsymbol{x}) &lt; 0.5\)</span>。</p>
+<p>而<span class="math inline">\(\boldsymbol{w}^T\boldsymbol{x} + b = 0\)</span>定义了样本空间<span class="math inline">\(\mathbb{R}^n\)</span>中的一个超平面，这个超平面被称为决策边界（decision boundary）。在样本空间上得到了Logistic Regression的一种解释：</p>
+<ul>
+<li><p>Logistic Regression实际上是在用一个超平面来划分样本空间，从而分出正反类。</p></li>
+<li><p>如果希望使用非线性的决策边界，可以把<span class="math inline">\(\boldsymbol{w}^T\boldsymbol{x} + b\)</span>换为高阶的多项式再进行Logistic Regression。</p></li>
+</ul>
+
+    </div>
+
+    
+    
+    
+
+    <footer class="post-footer">
+          
+
+<div class="post-copyright">
+<ul>
+  <li class="post-copyright-author">
+      <strong>本文作者： </strong>ZZM
+  </li>
+  <li class="post-copyright-link">
+      <strong>本文链接：</strong>
+      <a href="https://piggerzzm.github.io/2020/04/25/logistic%20Regression/" title="Logistic Regression小结">https://piggerzzm.github.io/2020/04/25/logistic Regression/</a>
+  </li>
+  <li class="post-copyright-license">
+    <strong>版权声明： </strong>本博客所有文章除特别声明外，均采用 <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/deed.zh" rel="noopener" target="_blank"><i class="fab fa-fw fa-creative-commons"></i>BY-NC-SA</a> 许可协议。转载请注明出处！
+  </li>
+</ul>
+</div>
+
+          <div class="post-tags">
+              <a href="/tags/%E6%9C%BA%E5%99%A8%E5%AD%A6%E4%B9%A0/" rel="tag"># 机器学习</a>
+          </div>
+
+        
+
+          <div class="post-nav">
+            <div class="post-nav-item">
+                <a href="/2020/03/28/Kuhn-Munkres/" rel="prev" title="Kuhn-Munkres算法">
+                  <i class="fa fa-chevron-left"></i> Kuhn-Munkres算法
+                </a>
+            </div>
+            <div class="post-nav-item">
+                <a href="/2020/06/28/AdaBoost%E5%B0%8F%E7%BB%93/" rel="next" title="AdaBoost小结">
+                  AdaBoost小结 <i class="fa fa-chevron-right"></i>
+                </a>
+            </div>
+          </div>
+    </footer>
+  </article>
+</div>
+
+
+
+
+
+
+      
+    <div class="comments" id="valine-comments"></div>
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      const activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      const commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+    </div>
+  </main>
+
+  <footer class="footer">
+    <div class="footer-inner">
+      
+
+      
+
+<div class="copyright">
+  
+  &copy; 2015 – 
+  <span itemprop="copyrightYear">2020</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">ZZM</span>
+</div>
+  <div class="powered-by">由 <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://theme-next.js.org/" class="theme-link" rel="noopener" target="_blank">NexT.Gemini</a> 强力驱动
+  </div>
+
+    </div>
+  </footer>
+
+  
+  <script src="//cdn.jsdelivr.net/npm/animejs@3.2.0/lib/anime.min.js"></script>
+<script src="/js/utils.js"></script><script src="/js/motion.js"></script><script src="/js/next-boot.js"></script>
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+
+
+
+
+
+
+
+  
+
+  
+      <script>
+  if (typeof MathJax === 'undefined') {
+    window.MathJax = {
+      tex: {
+        inlineMath: {'[+]': [['$', '$']]},
+        tags: 'ams'
+      },
+      options: {
+        renderActions: {
+          findScript: [10, doc => {
+            document.querySelectorAll('script[type^="math/tex"]').forEach(node => {
+              const display = !!node.type.match(/; *mode=display/);
+              const math = new doc.options.MathItem(node.textContent, doc.inputJax[0], display);
+              const text = document.createTextNode('');
+              node.parentNode.replaceChild(text, node);
+              math.start = {node: text, delim: '', n: 0};
+              math.end = {node: text, delim: '', n: 0};
+              doc.math.push(math);
+            });
+          }, '', false],
+          insertedScript: [200, () => {
+            document.querySelectorAll('mjx-container').forEach(node => {
+              const target = node.parentNode;
+              if (target.nodeName.toLowerCase() === 'li') {
+                target.parentNode.classList.add('has-jax');
+              }
+            });
+          }, '', false]
+        }
+      }
+    };
+    const script = document.createElement('script');
+    script.src = '//cdn.jsdelivr.net/npm/mathjax@3.1.2/es5/tex-mml-chtml.js';
+    script.defer = true;
+    document.head.appendChild(script);
+  } else {
+    MathJax.startup.document.state(0);
+    MathJax.typesetClear();
+    MathJax.texReset();
+    MathJax.typeset();
+  }
+</script>
+
+    
+
+  
+
+<script>
+NexT.utils.loadComments('#valine-comments', () => {
+  NexT.utils.getScript('//cdn.jsdelivr.net/npm/valine@1.4.14/dist/Valine.min.js', () => {
+    new Valine(Object.assign({"enable":true,"appId":"O43HpTIt69GbGvmdo1zlOrp3-gzGzoHsz","appKey":"Aa5tuTeHefCLzkzICbNgvDmx","serverURLs":null,"placeholder":"Just go go","avatar":"mm","meta":["nick","mail","link"],"pageSize":10,"lang":null,"visitor":true,"comment_count":true,"recordIP":true,"enableQQ":false,"requiredFields":[]}, {
+      el: '#valine-comments',
+      path: "/2020/04/25/logistic%20Regression/",
+      serverURLs: "https://o43hptit.api.lncldglobal.com"
+    }));
+  }, window.Valine);
+});
+</script>
+
+</body>
+</html>

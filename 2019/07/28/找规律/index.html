@@ -24,19 +24,21 @@
     var CONFIG = {"hostname":"piggerzzm.github.io","root":"/","scheme":"Gemini","version":"8.0.1","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12},"copycode":false,"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":true,"nav":null},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"fadeInDown","post_body":"fadeInDown","coll_header":"fadeInLeft","sidebar":"fadeInUp"}},"prism":false,"i18n":{"placeholder":"搜索...","empty":"没有找到任何搜索结果：${query}","hits_time":"找到 ${hits} 个搜索结果（用时 ${time} 毫秒）","hits":"找到 ${hits} 个搜索结果"}};
   </script>
 
-  <meta name="description" content="description">
-<meta property="og:type" content="website">
-<meta property="og:title" content="ZZM&#39;s Blog">
-<meta property="og:url" content="https://piggerzzm.github.io/archives/2020/index.html">
+  <meta name="description" content="刷PAT准备机试的时候碰到的一道题，只用到一点排列组合的知识。">
+<meta property="og:type" content="article">
+<meta property="og:title" content="记PAT一道找规律题">
+<meta property="og:url" content="https://piggerzzm.github.io/2019/07/28/%E6%89%BE%E8%A7%84%E5%BE%8B/index.html">
 <meta property="og:site_name" content="ZZM&#39;s Blog">
-<meta property="og:description" content="description">
+<meta property="og:description" content="刷PAT准备机试的时候碰到的一道题，只用到一点排列组合的知识。">
 <meta property="og:locale" content="zh_CN">
+<meta property="article:published_time" content="2019-07-28T05:29:35.000Z">
+<meta property="article:modified_time" content="2019-11-29T08:26:00.092Z">
 <meta property="article:author" content="ZZM">
-<meta property="article:tag" content="keywords">
+<meta property="article:tag" content="排列与组合">
 <meta name="twitter:card" content="summary">
 
 
-<link rel="canonical" href="https://piggerzzm.github.io/archives/2020/">
+<link rel="canonical" href="https://piggerzzm.github.io/2019/07/28/%E6%89%BE%E8%A7%84%E5%BE%8B/">
 
 
 <script class="page-configurations">
@@ -44,12 +46,12 @@
   CONFIG.page = {
     sidebar: "",
     isHome : false,
-    isPost : false,
+    isPost : true,
     lang   : 'zh-CN'
   };
 </script>
 
-  <title>归档 | ZZM's Blog</title>
+  <title>记PAT一道找规律题 | ZZM's Blog</title>
   
 
 
@@ -175,7 +177,7 @@
 
   <aside class="sidebar">
 
-    <div class="sidebar-inner sidebar-overview-active">
+    <div class="sidebar-inner sidebar-nav-active sidebar-toc-active">
       <ul class="sidebar-nav">
         <li class="sidebar-nav-toc">
           文章目录
@@ -187,6 +189,7 @@
 
       <!--noindex-->
       <section class="post-toc-wrap sidebar-panel">
+          <div class="post-toc animated"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#pat_a1104"><span class="nav-number">1.</span> <span class="nav-text">PAT_A1104</span></a></li></ol></div>
       </section>
       <!--/noindex-->
 
@@ -253,157 +256,153 @@
 </noscript>
 
 
-    <div class="main-inner archive posts-collapse">
+    <div class="main-inner post posts-expand">
       
 
       
 
   
-  
-  
-  <div class="post-block">
-    <div class="post-content">
-      <div class="collection-title">
-        <span class="collection-header">嗯..! 目前共计 14 篇日志。 继续努力。</span>
-      </div>
 
-      
-    <div class="collection-year">
-      <span class="collection-header">2020</span>
+
+<div class="post-block">
+  
+  
+
+  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://piggerzzm.github.io/2019/07/28/%E6%89%BE%E8%A7%84%E5%BE%8B/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/ZZM.jpg">
+      <meta itemprop="name" content="ZZM">
+      <meta itemprop="description" content="description">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="ZZM's Blog">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          记PAT一道找规律题
+        </h1>
+
+        <div class="post-meta-container">
+          <div class="post-meta">
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar"></i>
+      </span>
+      <span class="post-meta-item-text">发表于</span>
+
+      <time title="创建时间：2019-07-28 13:29:35" itemprop="dateCreated datePublished" datetime="2019-07-28T13:29:35+08:00">2019-07-28</time>
+    </span>
+      <span class="post-meta-item">
+        <span class="post-meta-item-icon">
+          <i class="far fa-calendar-check"></i>
+        </span>
+        <span class="post-meta-item-text">更新于</span>
+        <time title="修改时间：2019-11-29 16:26:00" itemprop="dateModified" datetime="2019-11-29T16:26:00+08:00">2019-11-29</time>
+      </span>
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-folder"></i>
+      </span>
+      <span class="post-meta-item-text">分类于</span>
+        <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+          <a href="/categories/%E8%AE%A1%E7%AE%97%E6%9C%BA%E7%A7%91%E5%AD%A6/" itemprop="url" rel="index"><span itemprop="name">计算机科学</span></a>
+        </span>
+    </span>
+
+  
+    <span id="/2019/07/28/%E6%89%BE%E8%A7%84%E5%BE%8B/" class="post-meta-item leancloud_visitors" data-flag-title="记PAT一道找规律题" title="阅读次数">
+      <span class="post-meta-item-icon">
+        <i class="far fa-eye"></i>
+      </span>
+      <span class="post-meta-item-text">阅读次数：</span>
+      <span class="leancloud-visitors-count"></span>
+    </span>
+  
+  <span class="post-meta-item">
+    
+      <span class="post-meta-item-icon">
+        <i class="far fa-comment"></i>
+      </span>
+      <span class="post-meta-item-text">Valine：</span>
+    
+    <a title="valine" href="/2019/07/28/%E6%89%BE%E8%A7%84%E5%BE%8B/#valine-comments" itemprop="discussionUrl">
+      <span class="post-comments-count valine-comment-count" data-xid="/2019/07/28/%E6%89%BE%E8%A7%84%E5%BE%8B/" itemprop="commentCount"></span>
+    </a>
+  </span>
+  
+  
+</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+        <p>刷PAT准备机试的时候碰到的一道题，只用到一点排列组合的知识。</p>
+<a id="more"></a>
+<h1 id="pat_a1104">PAT_A1104</h1>
+<p>给定一个有限项的实数列<span class="math inline">\(A=\{a_1,a_2,...,a_n\}\)</span>，设<span class="math inline">\(B=\{a_{k_1},a_{k_2},...a_{k_m}\}\)</span>，其中<span class="math inline">\(m\le n\)</span>。若<span class="math inline">\(k_1,...,k_m\)</span>为<span class="math inline">\(m\)</span>个相邻的整数，则称<span class="math inline">\(B\)</span>是<span class="math inline">\(A\)</span>的一个片段。一个数列中所有元素之和称为该数列的元素和。</p>
+<p>证明：<span class="math inline">\(A\)</span>的所有片段的元素和的总和为 <span class="math display">\[\sum_{i=1}^n ia_i(n+1-i)\]</span></p>
+<p>证明：考虑出现元素<span class="math inline">\(a_i\)</span>的片段的数量。在<span class="math inline">\(a_1\)</span>到<span class="math inline">\(a_i\)</span>共<span class="math inline">\(i\)</span>个元素中选一个作为片段的头，在<span class="math inline">\(a_i\)</span>到<span class="math inline">\(a_n\)</span>共<span class="math inline">\(n-i+1\)</span>个元素中选一个作为片段的尾，这样的片段包含<span class="math inline">\(a_i\)</span>，根据乘法原理，一共有<span class="math inline">\(i*(n-i+1)\)</span>个。所以元素<span class="math inline">\(a_i\)</span>出现<span class="math inline">\(i*(n-i+1)\)</span>次，求和即可。</p>
+
     </div>
 
-  <article itemscope itemtype="http://schema.org/Article">
-    <header class="post-header">
-      <div class="post-meta-container">
-        <time itemprop="dateCreated"
-              datetime="2020-06-28T00:00:00+08:00"
-              content="2020-06-28">
-          06-28
-        </time>
-      </div>
+    
+    
+    
 
-      <div class="post-title">
-          <a class="post-title-link" href="/2020/06/28/AdaBoost%E5%B0%8F%E7%BB%93/" itemprop="url">
-            <span itemprop="name">AdaBoost小结</span>
-          </a>
-      </div>
+    <footer class="post-footer">
+          
 
-      
-    </header>
+<div class="post-copyright">
+<ul>
+  <li class="post-copyright-author">
+      <strong>本文作者： </strong>ZZM
+  </li>
+  <li class="post-copyright-link">
+      <strong>本文链接：</strong>
+      <a href="https://piggerzzm.github.io/2019/07/28/%E6%89%BE%E8%A7%84%E5%BE%8B/" title="记PAT一道找规律题">https://piggerzzm.github.io/2019/07/28/找规律/</a>
+  </li>
+  <li class="post-copyright-license">
+    <strong>版权声明： </strong>本博客所有文章除特别声明外，均采用 <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/deed.zh" rel="noopener" target="_blank"><i class="fab fa-fw fa-creative-commons"></i>BY-NC-SA</a> 许可协议。转载请注明出处！
+  </li>
+</ul>
+</div>
+
+          <div class="post-tags">
+              <a href="/tags/%E6%8E%92%E5%88%97%E4%B8%8E%E7%BB%84%E5%90%88/" rel="tag"># 排列与组合</a>
+          </div>
+
+        
+
+          <div class="post-nav">
+            <div class="post-nav-item">
+                <a href="/2019/07/28/%E9%99%A4%E7%95%99%E4%BD%99%E6%95%B0%E6%B3%95/" rel="prev" title="除留余数法">
+                  <i class="fa fa-chevron-left"></i> 除留余数法
+                </a>
+            </div>
+            <div class="post-nav-item">
+                <a href="/2019/07/28/PDCurses/" rel="next" title="PDCureses库的安装和使用">
+                  PDCureses库的安装和使用 <i class="fa fa-chevron-right"></i>
+                </a>
+            </div>
+          </div>
+    </footer>
   </article>
-
-  <article itemscope itemtype="http://schema.org/Article">
-    <header class="post-header">
-      <div class="post-meta-container">
-        <time itemprop="dateCreated"
-              datetime="2020-04-25T00:00:00+08:00"
-              content="2020-04-25">
-          04-25
-        </time>
-      </div>
-
-      <div class="post-title">
-          <a class="post-title-link" href="/2020/04/25/logistic%20Regression/" itemprop="url">
-            <span itemprop="name">Logistic Regression小结</span>
-          </a>
-      </div>
-
-      
-    </header>
-  </article>
-
-  <article itemscope itemtype="http://schema.org/Article">
-    <header class="post-header">
-      <div class="post-meta-container">
-        <time itemprop="dateCreated"
-              datetime="2020-03-28T00:05:00+08:00"
-              content="2020-03-28">
-          03-28
-        </time>
-      </div>
-
-      <div class="post-title">
-          <a class="post-title-link" href="/2020/03/28/Kuhn-Munkres/" itemprop="url">
-            <span itemprop="name">Kuhn-Munkres算法</span>
-          </a>
-      </div>
-
-      
-    </header>
-  </article>
-
-  <article itemscope itemtype="http://schema.org/Article">
-    <header class="post-header">
-      <div class="post-meta-container">
-        <time itemprop="dateCreated"
-              datetime="2020-03-22T00:00:00+08:00"
-              content="2020-03-22">
-          03-22
-        </time>
-      </div>
-
-      <div class="post-title">
-          <a class="post-title-link" href="/2020/03/22/Hungary/" itemprop="url">
-            <span itemprop="name">匈牙利算法</span>
-          </a>
-      </div>
-
-      
-    </header>
-  </article>
-
-  <article itemscope itemtype="http://schema.org/Article">
-    <header class="post-header">
-      <div class="post-meta-container">
-        <time itemprop="dateCreated"
-              datetime="2020-02-05T00:00:00+08:00"
-              content="2020-02-05">
-          02-05
-        </time>
-      </div>
-
-      <div class="post-title">
-          <a class="post-title-link" href="/2020/02/05/%E6%95%99%E7%A7%91%E4%B9%A6%E8%88%AC%E7%9A%84%E4%BA%B5%E6%B8%8E/" itemprop="url">
-            <span itemprop="name">教科书般的亵渎</span>
-          </a>
-      </div>
-
-      
-    </header>
-  </article>
-
-  <article itemscope itemtype="http://schema.org/Article">
-    <header class="post-header">
-      <div class="post-meta-container">
-        <time itemprop="dateCreated"
-              datetime="2020-02-01T00:00:00+08:00"
-              content="2020-02-01">
-          02-01
-        </time>
-      </div>
-
-      <div class="post-title">
-          <a class="post-title-link" href="/2020/02/01/SEIR/" itemprop="url">
-            <span itemprop="name">SEIR模型简介</span>
-          </a>
-      </div>
-
-      
-    </header>
-  </article>
+</div>
 
 
-    </div>
-  </div>
-  
-  
-  
 
-  
 
 
 
       
+    <div class="comments" id="valine-comments"></div>
 
 <script>
   window.addEventListener('tabs:register', () => {
@@ -486,6 +485,50 @@
   
 
   
+      <script>
+  if (typeof MathJax === 'undefined') {
+    window.MathJax = {
+      tex: {
+        inlineMath: {'[+]': [['$', '$']]},
+        tags: 'ams'
+      },
+      options: {
+        renderActions: {
+          findScript: [10, doc => {
+            document.querySelectorAll('script[type^="math/tex"]').forEach(node => {
+              const display = !!node.type.match(/; *mode=display/);
+              const math = new doc.options.MathItem(node.textContent, doc.inputJax[0], display);
+              const text = document.createTextNode('');
+              node.parentNode.replaceChild(text, node);
+              math.start = {node: text, delim: '', n: 0};
+              math.end = {node: text, delim: '', n: 0};
+              doc.math.push(math);
+            });
+          }, '', false],
+          insertedScript: [200, () => {
+            document.querySelectorAll('mjx-container').forEach(node => {
+              const target = node.parentNode;
+              if (target.nodeName.toLowerCase() === 'li') {
+                target.parentNode.classList.add('has-jax');
+              }
+            });
+          }, '', false]
+        }
+      }
+    };
+    const script = document.createElement('script');
+    script.src = '//cdn.jsdelivr.net/npm/mathjax@3.1.2/es5/tex-mml-chtml.js';
+    script.defer = true;
+    document.head.appendChild(script);
+  } else {
+    MathJax.startup.document.state(0);
+    MathJax.typesetClear();
+    MathJax.texReset();
+    MathJax.typeset();
+  }
+</script>
+
+    
 
   
 
@@ -494,7 +537,7 @@ NexT.utils.loadComments('#valine-comments', () => {
   NexT.utils.getScript('//cdn.jsdelivr.net/npm/valine@1.4.14/dist/Valine.min.js', () => {
     new Valine(Object.assign({"enable":true,"appId":"O43HpTIt69GbGvmdo1zlOrp3-gzGzoHsz","appKey":"Aa5tuTeHefCLzkzICbNgvDmx","serverURLs":null,"placeholder":"Just go go","avatar":"mm","meta":["nick","mail","link"],"pageSize":10,"lang":null,"visitor":true,"comment_count":true,"recordIP":true,"enableQQ":false,"requiredFields":[]}, {
       el: '#valine-comments',
-      path: "/archives/2020/",
+      path: "/2019/07/28/%E6%89%BE%E8%A7%84%E5%BE%8B/",
       serverURLs: "https://o43hptit.api.lncldglobal.com"
     }));
   }, window.Valine);

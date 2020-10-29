@@ -1,0 +1,591 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 5.2.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+  <link rel="manifest" href="/images/manifest.json">
+  <meta name="msapplication-config" content="/images/browserconfig.xml">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+
+<link rel="stylesheet" href="//cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@5.15.0/css/all.min.css">
+  <link rel="stylesheet" href="//cdn.jsdelivr.net/npm/animate.css@3.1.1/animate.min.css">
+
+<script class="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"piggerzzm.github.io","root":"/","scheme":"Gemini","version":"8.0.1","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12},"copycode":false,"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":true,"nav":null},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"fadeInDown","post_body":"fadeInDown","coll_header":"fadeInLeft","sidebar":"fadeInUp"}},"prism":false,"i18n":{"placeholder":"搜索...","empty":"没有找到任何搜索结果：${query}","hits_time":"找到 ${hits} 个搜索结果（用时 ${time} 毫秒）","hits":"找到 ${hits} 个搜索结果"}};
+  </script>
+
+  <meta name="description" content="除留余数法是哈希表中常用的哈希函数，假设哈希表的大小为\(m\)，则除留余数法的哈希函数的一般形式为： \[ hash(key) &#x3D; key \% p \] 其中\(p\)是不大于\(m\)且最接近\(m\)的素数。  参考文献：《数据结构——用面向对象方法与C++语言描述》第2版  现在问题来了：\(p\)的选取为什么非得是素数呢？">
+<meta property="og:type" content="article">
+<meta property="og:title" content="除留余数法">
+<meta property="og:url" content="https://piggerzzm.github.io/2019/07/28/%E9%99%A4%E7%95%99%E4%BD%99%E6%95%B0%E6%B3%95/index.html">
+<meta property="og:site_name" content="ZZM&#39;s Blog">
+<meta property="og:description" content="除留余数法是哈希表中常用的哈希函数，假设哈希表的大小为\(m\)，则除留余数法的哈希函数的一般形式为： \[ hash(key) &#x3D; key \% p \] 其中\(p\)是不大于\(m\)且最接近\(m\)的素数。  参考文献：《数据结构——用面向对象方法与C++语言描述》第2版  现在问题来了：\(p\)的选取为什么非得是素数呢？">
+<meta property="og:locale" content="zh_CN">
+<meta property="article:published_time" content="2019-07-28T05:29:35.000Z">
+<meta property="article:modified_time" content="2019-11-29T08:26:00.094Z">
+<meta property="article:author" content="ZZM">
+<meta property="article:tag" content="数据结构">
+<meta property="article:tag" content="除留余数法">
+<meta property="article:tag" content="数论">
+<meta name="twitter:card" content="summary">
+
+
+<link rel="canonical" href="https://piggerzzm.github.io/2019/07/28/%E9%99%A4%E7%95%99%E4%BD%99%E6%95%B0%E6%B3%95/">
+
+
+<script class="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>除留余数法 | ZZM's Blog</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  body { margin-top: 2rem; }
+
+  .use-motion .menu-item,
+  .use-motion .sidebar,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header {
+    visibility: visible;
+  }
+
+  .use-motion .header,
+  .use-motion .site-brand-container .toggle,
+  .use-motion .footer { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle,
+  .use-motion .custom-logo-image {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line {
+    transform: scaleX(1);
+  }
+
+  .search-pop-overlay, .sidebar-nav { display: none; }
+  .sidebar-panel { display: block; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage" class="use-motion">
+  <div class="headband"></div>
+
+  <main class="main">
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <i class="logo-line"></i>
+      <h1 class="site-title">ZZM's Blog</h1>
+      <i class="logo-line"></i>
+    </a>
+      <p class="site-subtitle" itemprop="description">ZZM's Blog</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+    </div>
+  </div>
+</div>
+
+
+
+<nav class="site-nav">
+  <ul class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-about">
+
+    <a href="/about/" rel="section"><i class="fa fa-user fa-fw"></i>关于</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a>
+
+  </li>
+        <li class="menu-item menu-item-schedule">
+
+    <a href="/schedule/" rel="section"><i class="fa fa-calendar fa-fw"></i>日程表</a>
+
+  </li>
+  </ul>
+</nav>
+
+
+
+
+</div>
+        
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+  </div>
+
+  <aside class="sidebar">
+
+    <div class="sidebar-inner sidebar-nav-active sidebar-toc-active">
+      <ul class="sidebar-nav">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <section class="post-toc-wrap sidebar-panel">
+          <div class="post-toc animated"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%93%88%E5%B8%8C%E5%87%BD%E6%95%B0%E7%9A%84%E6%9E%84%E9%80%A0%E8%A6%81%E7%82%B9"><span class="nav-number">1.</span> <span class="nav-text">哈希函数的构造要点</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E6%B1%82%E8%A7%A3%E6%9C%80%E4%BC%98%E7%9A%84p"><span class="nav-number">2.</span> <span class="nav-text">求解最优的\(p\)</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%93%88%E5%B8%8C%E5%87%BD%E6%95%B0%E4%B8%ADp%E5%8F%96%E7%B4%A0%E6%95%B0%E7%9A%84%E5%8E%9F%E5%9B%A0"><span class="nav-number">3.</span> <span class="nav-text">哈希函数中\(p\)取素数的原因</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%85%B6%E4%BB%96"><span class="nav-number">4.</span> <span class="nav-text">其他</span></a></li></ol></div>
+      </section>
+      <!--/noindex-->
+
+      <section class="site-overview-wrap sidebar-panel">
+        <div class="site-author site-overview-item animated" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="ZZM"
+      src="/images/ZZM.jpg">
+  <p class="site-author-name" itemprop="name">ZZM</p>
+  <div class="site-description" itemprop="description">description</div>
+</div>
+<div class="site-state-wrap site-overview-item animated">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">14</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">5</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">15</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author site-overview-item animated">
+      <span class="links-of-author-item">
+        <a href="https://github.com/PiggerZZM" title="GitHub → https:&#x2F;&#x2F;github.com&#x2F;PiggerZZM" rel="noopener" target="_blank"><i class="fab fa-github fa-fw"></i>GitHub</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="/442823793@qq.com" title="E-Mail → 442823793@qq.com"><i class="fa fa-envelope fa-fw"></i>E-Mail</a>
+      </span>
+  </div>
+  <div class="cc-license site-overview-item animated" itemprop="license">
+    <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/deed.zh" class="cc-opacity" rel="noopener" target="_blank"><img src="/images/cc-by-nc-sa.svg" alt="Creative Commons"></a>
+  </div>
+
+
+
+      </section>
+    </div>
+  </aside>
+  <div class="sidebar-dimmer"></div>
+
+
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+
+<noscript>
+  <div class="noscript-warning">Theme NexT works best with JavaScript enabled</div>
+</noscript>
+
+
+    <div class="main-inner post posts-expand">
+      
+
+      
+
+  
+
+
+<div class="post-block">
+  
+  
+
+  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://piggerzzm.github.io/2019/07/28/%E9%99%A4%E7%95%99%E4%BD%99%E6%95%B0%E6%B3%95/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/ZZM.jpg">
+      <meta itemprop="name" content="ZZM">
+      <meta itemprop="description" content="description">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="ZZM's Blog">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          除留余数法
+        </h1>
+
+        <div class="post-meta-container">
+          <div class="post-meta">
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar"></i>
+      </span>
+      <span class="post-meta-item-text">发表于</span>
+
+      <time title="创建时间：2019-07-28 13:29:35" itemprop="dateCreated datePublished" datetime="2019-07-28T13:29:35+08:00">2019-07-28</time>
+    </span>
+      <span class="post-meta-item">
+        <span class="post-meta-item-icon">
+          <i class="far fa-calendar-check"></i>
+        </span>
+        <span class="post-meta-item-text">更新于</span>
+        <time title="修改时间：2019-11-29 16:26:00" itemprop="dateModified" datetime="2019-11-29T16:26:00+08:00">2019-11-29</time>
+      </span>
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-folder"></i>
+      </span>
+      <span class="post-meta-item-text">分类于</span>
+        <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+          <a href="/categories/%E8%AE%A1%E7%AE%97%E6%9C%BA%E7%A7%91%E5%AD%A6/" itemprop="url" rel="index"><span itemprop="name">计算机科学</span></a>
+        </span>
+    </span>
+
+  
+    <span id="/2019/07/28/%E9%99%A4%E7%95%99%E4%BD%99%E6%95%B0%E6%B3%95/" class="post-meta-item leancloud_visitors" data-flag-title="除留余数法" title="阅读次数">
+      <span class="post-meta-item-icon">
+        <i class="far fa-eye"></i>
+      </span>
+      <span class="post-meta-item-text">阅读次数：</span>
+      <span class="leancloud-visitors-count"></span>
+    </span>
+  
+  <span class="post-meta-item">
+    
+      <span class="post-meta-item-icon">
+        <i class="far fa-comment"></i>
+      </span>
+      <span class="post-meta-item-text">Valine：</span>
+    
+    <a title="valine" href="/2019/07/28/%E9%99%A4%E7%95%99%E4%BD%99%E6%95%B0%E6%B3%95/#valine-comments" itemprop="discussionUrl">
+      <span class="post-comments-count valine-comment-count" data-xid="/2019/07/28/%E9%99%A4%E7%95%99%E4%BD%99%E6%95%B0%E6%B3%95/" itemprop="commentCount"></span>
+    </a>
+  </span>
+  
+  
+</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+        <p>除留余数法是哈希表中常用的哈希函数，假设哈希表的大小为<span class="math inline">\(m\)</span>，则除留余数法的哈希函数的一般形式为：</p>
+<p><span class="math display">\[ hash(key) = key \% p \]</span></p>
+<p>其中<span class="math inline">\(p\)</span>是不大于<span class="math inline">\(m\)</span>且最接近<span class="math inline">\(m\)</span>的素数。</p>
+<blockquote>
+<p>参考文献：《数据结构——用面向对象方法与C++语言描述》第2版</p>
+</blockquote>
+<p>现在问题来了：<span class="math inline">\(p\)</span>的选取为什么非得是素数呢？</p>
+<a id="more"></a>
+<h1 id="哈希函数的构造要点">哈希函数的构造要点</h1>
+<ol type="1">
+<li>哈希函数的定义域要包括所有关键码key</li>
+<li>如果哈希表的大小为<span class="math inline">\(m\)</span>，则哈希函数的值域必须是<span class="math inline">\(0\)</span>到<span class="math inline">\(m-1\)</span></li>
+<li>哈希函数的取值应当尽量分布均匀以减少冲突</li>
+<li>哈希函数的计算应当足够简单</li>
+</ol>
+<p>从需求来看，1和2是对哈希函数定义域和值域的要求，3是要求冲突尽可能低，4是要求计算量低。</p>
+<ul>
+<li>很显然1是容易满足的，因为取模函数的定义域是全体整数</li>
+<li>为了满足2，<span class="math inline">\(p\)</span>只需取一个小于等于<span class="math inline">\(m\)</span>的数即可</li>
+<li>4也是容易满足的，因为取模运算足够简单</li>
+</ul>
+<p>下面详细讨论3：</p>
+<p>3的需求用数学语言可以表述为：设<span class="math inline">\(key\)</span>是一个整数随机变量，则<span class="math inline">\(hash(key)\)</span>是一个取值为<span class="math inline">\(0\)</span>到<span class="math inline">\(m-1\)</span>的整数随机变量，希望取适当的<span class="math inline">\(p\)</span>使得<span class="math inline">\(hash(key)\)</span>的每个取值都为<span class="math inline">\(\frac{1}{p}\)</span>。很显然<span class="math inline">\(key\)</span>服从何种概率分布是至关重要的，实际上已知<span class="math inline">\(key\)</span>分布列情况下求出<span class="math inline">\(p\)</span>的最优取值还是有办法的。</p>
+<h1 id="求解最优的p">求解最优的<span class="math inline">\(p\)</span></h1>
+<blockquote>
+<p>假设<span class="math inline">\(key\)</span>的分布列为<span class="math inline">\(P\{key = i\} = p_i\)</span>。只需要用到一点离散概率知识，求出<span class="math inline">\(hash(key)\)</span>的分布列，为了记号简单我就直接写成<span class="math inline">\(P\{hash(key) = i\} = q_i(p)\)</span>好了。参数<span class="math inline">\(p\)</span>的最优性可以定义为使<span class="math inline">\(hash(key)\)</span>取每个值的概率与<span class="math inline">\(\frac{1}{p}\)</span>的平方误差最小，即 <span class="math display">\[ p = \arg\min \sum_i (q_i(p) - \frac{1}{p})^2\]</span> 然后求解这个优化问题即可。这里<span class="math inline">\(q_i(p)\)</span>表示<span class="math inline">\(q_i\)</span>依赖于<span class="math inline">\(p\)</span>。忽略求解过程。</p>
+</blockquote>
+<p>稍微偏题了一下给出了一种数学建模的解法，上面这个方法说复杂也不复杂，但是求解那个优化问题可能还是没那么简单的。如果先承认<span class="math inline">\(p\)</span>取素数比取合数好的话，那么用脚趾头想也知道选最接近<span class="math inline">\(m\)</span>又不超过<span class="math inline">\(m\)</span>的素数作为<span class="math inline">\(p\)</span>是非常好的选择，而且也绕开了上面求解优化问题的繁琐。下面回归正题，解释为什么<span class="math inline">\(p\)</span>要选素数。</p>
+<h1 id="哈希函数中p取素数的原因">哈希函数中<span class="math inline">\(p\)</span>取素数的原因</h1>
+<p>如前所述，需求3与<span class="math inline">\(key\)</span>所服从的分布有密切关系。如果<span class="math inline">\(key\)</span>服从均匀分布的话，那么取<span class="math inline">\(p=m\)</span>这个问题就解决了。</p>
+<p>对于不服从均匀分布的时候，先看这样一种情况：</p>
+<blockquote>
+<p>例：<span class="math inline">\(key\)</span>的取值范围<span class="math inline">\(A=\{0,6,12,18,24,30,36,...\}\)</span>，如果<span class="math inline">\(m=10\)</span>，直接取<span class="math inline">\(p=10\)</span>，很容易发现<span class="math inline">\(hash(key)\in \{0,6,2,8,4\}\)</span>。出现的问题有两个，哈希表的空间浪费了，冲突现象变多了。</p>
+</blockquote>
+<p>网上有很多靠谱的解释，这里感谢由知乎用户Porzy给出的一个比较简洁的解释(<a target="_blank" rel="noopener" href="https://www.zhihu.com/question/20806796">原文链接</a>)</p>
+<p>因为<span class="math inline">\(hash(key)=key\%p\)</span>，不妨设<span class="math inline">\(key = a*p+hash(key)\)</span>，则<span class="math inline">\(hash(key)=key-a*p\)</span>。</p>
+<p>于是有</p>
+<p><span class="math display">\[hash(key)=gcd(key,p)*(\frac{key}{gcd(key,p)}-\frac{a*p}{gcd(key,p)})\]</span></p>
+<p>这个等式表明<span class="math inline">\(hash(key)\)</span>的取值只能是<span class="math inline">\(gcd(key,p)\)</span>的倍数，对于上面的例子，A中的元素都是6的倍数，6和10的最大公约数为2，因此A中的元素只能被映射成0,2,4,6,8。</p>
+<p>将<span class="math inline">\(p\)</span>取成素数的好处就在于<span class="math inline">\(gcd(key,p)=1\)</span>，保证了上述这种极端情况下哈希值不会只取到部分值导致冲突现象变多。</p>
+<h1 id="其他">其他</h1>
+<p>其实将<span class="math inline">\(p\)</span>取成素数并不是最优的选择，仅仅是杜绝了上述的极端现象，在查阅资料的时候也有看到说<span class="math inline">\(p\)</span>的选取准则并不是只有取素数。</p>
+<ul>
+<li>这个网站给出了一些好的哈希参数<a target="_blank" rel="noopener" href="https://planetmath.org/goodhashtableprimes">good hashing configuration</a></li>
+</ul>
+
+    </div>
+
+    
+    
+    
+
+    <footer class="post-footer">
+          
+
+<div class="post-copyright">
+<ul>
+  <li class="post-copyright-author">
+      <strong>本文作者： </strong>ZZM
+  </li>
+  <li class="post-copyright-link">
+      <strong>本文链接：</strong>
+      <a href="https://piggerzzm.github.io/2019/07/28/%E9%99%A4%E7%95%99%E4%BD%99%E6%95%B0%E6%B3%95/" title="除留余数法">https://piggerzzm.github.io/2019/07/28/除留余数法/</a>
+  </li>
+  <li class="post-copyright-license">
+    <strong>版权声明： </strong>本博客所有文章除特别声明外，均采用 <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/deed.zh" rel="noopener" target="_blank"><i class="fab fa-fw fa-creative-commons"></i>BY-NC-SA</a> 许可协议。转载请注明出处！
+  </li>
+</ul>
+</div>
+
+          <div class="post-tags">
+              <a href="/tags/%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84/" rel="tag"># 数据结构</a>
+              <a href="/tags/%E9%99%A4%E7%95%99%E4%BD%99%E6%95%B0%E6%B3%95/" rel="tag"># 除留余数法</a>
+              <a href="/tags/%E6%95%B0%E8%AE%BA/" rel="tag"># 数论</a>
+          </div>
+
+        
+
+          <div class="post-nav">
+            <div class="post-nav-item">
+                <a href="/2019/04/22/%E8%A7%A3%E5%86%B3Hexo%E5%92%8CMathjax%E7%9A%84%E5%86%B2%E7%AA%81/" rel="prev" title="解决Hexo和Mathjax的冲突">
+                  <i class="fa fa-chevron-left"></i> 解决Hexo和Mathjax的冲突
+                </a>
+            </div>
+            <div class="post-nav-item">
+                <a href="/2019/07/28/%E6%89%BE%E8%A7%84%E5%BE%8B/" rel="next" title="记PAT一道找规律题">
+                  记PAT一道找规律题 <i class="fa fa-chevron-right"></i>
+                </a>
+            </div>
+          </div>
+    </footer>
+  </article>
+</div>
+
+
+
+
+
+
+      
+    <div class="comments" id="valine-comments"></div>
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      const activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      const commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+    </div>
+  </main>
+
+  <footer class="footer">
+    <div class="footer-inner">
+      
+
+      
+
+<div class="copyright">
+  
+  &copy; 2015 – 
+  <span itemprop="copyrightYear">2020</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">ZZM</span>
+</div>
+  <div class="powered-by">由 <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://theme-next.js.org/" class="theme-link" rel="noopener" target="_blank">NexT.Gemini</a> 强力驱动
+  </div>
+
+    </div>
+  </footer>
+
+  
+  <script src="//cdn.jsdelivr.net/npm/animejs@3.2.0/lib/anime.min.js"></script>
+<script src="/js/utils.js"></script><script src="/js/motion.js"></script><script src="/js/next-boot.js"></script>
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+
+
+
+
+
+
+
+  
+
+  
+      <script>
+  if (typeof MathJax === 'undefined') {
+    window.MathJax = {
+      tex: {
+        inlineMath: {'[+]': [['$', '$']]},
+        tags: 'ams'
+      },
+      options: {
+        renderActions: {
+          findScript: [10, doc => {
+            document.querySelectorAll('script[type^="math/tex"]').forEach(node => {
+              const display = !!node.type.match(/; *mode=display/);
+              const math = new doc.options.MathItem(node.textContent, doc.inputJax[0], display);
+              const text = document.createTextNode('');
+              node.parentNode.replaceChild(text, node);
+              math.start = {node: text, delim: '', n: 0};
+              math.end = {node: text, delim: '', n: 0};
+              doc.math.push(math);
+            });
+          }, '', false],
+          insertedScript: [200, () => {
+            document.querySelectorAll('mjx-container').forEach(node => {
+              const target = node.parentNode;
+              if (target.nodeName.toLowerCase() === 'li') {
+                target.parentNode.classList.add('has-jax');
+              }
+            });
+          }, '', false]
+        }
+      }
+    };
+    const script = document.createElement('script');
+    script.src = '//cdn.jsdelivr.net/npm/mathjax@3.1.2/es5/tex-mml-chtml.js';
+    script.defer = true;
+    document.head.appendChild(script);
+  } else {
+    MathJax.startup.document.state(0);
+    MathJax.typesetClear();
+    MathJax.texReset();
+    MathJax.typeset();
+  }
+</script>
+
+    
+
+  
+
+<script>
+NexT.utils.loadComments('#valine-comments', () => {
+  NexT.utils.getScript('//cdn.jsdelivr.net/npm/valine@1.4.14/dist/Valine.min.js', () => {
+    new Valine(Object.assign({"enable":true,"appId":"O43HpTIt69GbGvmdo1zlOrp3-gzGzoHsz","appKey":"Aa5tuTeHefCLzkzICbNgvDmx","serverURLs":null,"placeholder":"Just go go","avatar":"mm","meta":["nick","mail","link"],"pageSize":10,"lang":null,"visitor":true,"comment_count":true,"recordIP":true,"enableQQ":false,"requiredFields":[]}, {
+      el: '#valine-comments',
+      path: "/2019/07/28/%E9%99%A4%E7%95%99%E4%BD%99%E6%95%B0%E6%B3%95/",
+      serverURLs: "https://o43hptit.api.lncldglobal.com"
+    }));
+  }, window.Valine);
+});
+</script>
+
+</body>
+</html>
