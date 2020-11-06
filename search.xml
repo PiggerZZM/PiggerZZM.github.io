@@ -1,0 +1,976 @@
+<?xml version="1.0" encoding="utf-8"?>
+<search>
+  <entry>
+    <title>AdaBoost小结</title>
+    <url>/2020/06/28/AdaBoost%E5%B0%8F%E7%BB%93/</url>
+    <content><![CDATA[<h1 id="adaboost">AdaBoost</h1>
+<p>总结一下AdaBoost</p>
+<blockquote>
+<p>参考文献：西瓜书，南瓜书，"ADDITIVE LOGISTIC REGRESSION: A STATISTICAL VIEW OF BOOSTING"</p>
+</blockquote>
+<a id="more"></a>
+<h2 id="集成学习">集成学习</h2>
+<p>集成学习（ensemble learning）通过构建多个个体学习器，并将它们结合在一起构成集成学习器来完成学习任务。</p>
+<p>集成学习的两个关键要素就是个体学习器（基学习器）和结合策略。</p>
+<ul>
+<li>假设个体学习器错误率相互独立的前提下，可以证明随着集成数量的增加，集成错误率将以指数级下降并趋于0.</li>
+</ul>
+<p>根据结合策略的不同，目前集成学习的方法可大体分为Boosting和Bagging两大类。</p>
+<h2 id="boosting">Boosting</h2>
+<p>Boosting（提升学习）是一族将弱学习器提升为强学习器的算法，个体学习器之间存在强依赖关系，必须串行生成。</p>
+<p>通常的工作机制是：先训练出一个基学习器，根据基学习器的表现对训练样本的分布进行调整，使先前分类错误的样本在后续得到更多关注，然后基于调整后的分布进行训练下一个基学习器。最后将基学习器进行结合。</p>
+<h2 id="adaboost-1">AdaBoost</h2>
+<p>AdaBoost是Boosting算法里著名的代表，标准的AdaBoost只适用于二分类任务。</p>
+<p>假设训练集为<span class="math inline">\(D = \{(\boldsymbol{x}_1, y_1),...,(\boldsymbol{x}_m, y_m)\}\)</span>，其中<span class="math inline">\(\boldsymbol{x}_i \in \mathbb{R}^n\)</span>，<span class="math inline">\(y_i \in \{-1, +1\}\)</span>为样本的类标记。假设训练集<span class="math inline">\(D\)</span>里的样本服从某个分布<span class="math inline">\(\mathcal{D}\)</span>，即<span class="math inline">\(\boldsymbol{x} \sim \mathcal{D}\)</span>。</p>
+<p>第<span class="math inline">\(t\)</span>轮训练的基分类器记为<span class="math inline">\(h_t(\boldsymbol{x})\)</span>，基分类器的加权和记为<span class="math inline">\(H(\boldsymbol{x})\)</span>，最终的集成分类器记为<span class="math inline">\(F(\boldsymbol{x})\)</span></p>
+<p><img src="/images/AdaBoost.png" width="500" hegiht="313" align=center /></p>
+<ul>
+<li>AdaBoost算法需要详细解释的地方有两处：①基分类器<span class="math inline">\(h_t\)</span>的权重为何采用第6行的公式来计算②样本分布为何采用第7行的公式来更新</li>
+</ul>
+<h3 id="adaboost的损失函数指数损失">AdaBoost的损失函数——指数损失</h3>
+<p>根据西瓜书的推导方法，AdaBoost采用的损失函数为指数损失函数：</p>
+<p><span class="math display">\[
+l_{exp}(H|\mathcal{D}) = \mathbb{E}_{\boldsymbol{x} \sim \mathcal{D}}[e^{-yH(\boldsymbol{x})}]
+\]</span></p>
+<p>其中<span class="math inline">\(H(\boldsymbol{x})\)</span>是基分类器的加权和，<span class="math inline">\(y\)</span>是样本的类标记。</p>
+<p><span class="math display">\[
+H(\boldsymbol{x}) = \sum_{t=1}^T \alpha_t h_t(\boldsymbol{x})
+\]</span></p>
+<h3 id="贝叶斯最优错误率">贝叶斯最优错误率</h3>
+<ul>
+<li>最小化指数损失将使最终的集成分类器<span class="math inline">\(F(\boldsymbol{x})\)</span>满足<strong>贝叶斯最优错误率</strong>：</li>
+</ul>
+<p><span class="math display">\[
+F(\boldsymbol{x}) = \arg\max_y P(f(\boldsymbol{x})=y|\boldsymbol{x})
+\]</span></p>
+<p>当指数损失得到最小化时，对应的条件期望 <span class="math inline">\(\mathbb{E}_{\boldsymbol{x} \sim \mathcal{D}}[e^{-yH(\boldsymbol{x})}|\boldsymbol{x}]\)</span> 也一定得到最小化。</p>
+<p><span class="math display">\[
+\mathbb{E}_{\boldsymbol{x} \sim \mathcal{D}}[e^{-yH(\boldsymbol{x})}|\boldsymbol{x}] = e^{-H(\boldsymbol{x})} P(y=1|\boldsymbol{x}) + e^{H(\boldsymbol{x})} P(y=-1|\boldsymbol{x})
+\]</span></p>
+<p>此时条件期望对<span class="math inline">\(H(\boldsymbol{x})\)</span>的偏导数为0：</p>
+<p><span class="math display">\[
+\frac{\partial \mathbb{E}_{\boldsymbol{x} \sim \mathcal{D}}[e^{-yH(\boldsymbol{x})}|\boldsymbol{x}]}{\partial H(\boldsymbol{x})} = -e^{-H(\boldsymbol{x})} P(y=1|\boldsymbol{x}) + e^{H(\boldsymbol{x})}P(y=-1|\boldsymbol{x}) = 0
+\]</span></p>
+<p>解得</p>
+<p><span class="math display">\[
+H(\boldsymbol{x}) = \frac{1}{2} ln\frac{P(y=1|\boldsymbol{x})}{P(y=-1|\boldsymbol{x})}
+\]</span></p>
+<p>因此有</p>
+<p><span class="math display">\[
+F(\boldsymbol{x}) = sign(H(\boldsymbol{x})) = sign(ln\frac{P(y=1|\boldsymbol{x})}{P(y=-1|\boldsymbol{x})}) 
+= \begin{cases}
+1,  &amp; P(y=1|\boldsymbol{x}) &gt; P(y=-1|\boldsymbol{x}) \\
+-1, &amp; P(y=1|\boldsymbol{x}) &lt; P(y=-1|\boldsymbol{x})
+\end{cases} \\
+= \arg\max_y P(f(\boldsymbol{x})=y|\boldsymbol{x})
+\]</span></p>
+<h3 id="基分类器权重公式">基分类器权重公式</h3>
+<ul>
+<li>权重<span class="math inline">\(\alpha_t\)</span>应最小化带权基分类器<span class="math inline">\(\alpha_t h_t\)</span> 在 $_t $ 上的指数损失</li>
+</ul>
+<p><span class="math display">\[
+\alpha_t = \arg\min_\alpha l_{exp}(\alpha h_t|\mathcal{D}_t)
+\]</span></p>
+<p>注意到<span class="math inline">\(yh_t(\boldsymbol{x})\in \{-1, +1\}\)</span></p>
+<p><span class="math display">\[
+l_{exp}(\alpha_th_t|\mathcal{D}_t) = \mathbb{E}_{\boldsymbol{x} \sim \mathcal{D}_t} [e^{-y\alpha_th_t(\boldsymbol{x})}] \\
+\]</span></p>
+<p>指数损失<span class="math inline">\(l_{exp}(\alpha_th_t|\mathcal{D}_t)\)</span>最小化时，<span class="math inline">\(l_{exp}(\alpha_th_t|\mathcal{D}_t)\)</span>对基分类器的权重<span class="math inline">\(\alpha_t\)</span>的偏导数为0：</p>
+<p><span class="math display">\[
+\frac{\partial l_{exp}(\alpha_th_t|\mathcal{D}_t)}{\partial \alpha_t} = -e^{-\alpha_t}(1-\epsilon_t) + e^{\alpha_t} \epsilon_t = 0
+\]</span></p>
+<p>解得</p>
+<p><span class="math display">\[
+\alpha_t = \frac{1}{2} ln(\frac{1 - \epsilon_t}{\epsilon_t})
+\]</span></p>
+<p>从这里还可以看出，当<span class="math inline">\(\epsilon_t &gt; 0.5\)</span>时有<span class="math inline">\(\alpha_t &lt; 0\)</span>。</p>
+<p>这说明如果某一个基分类器比随机猜测的效果还差的时候，这个基分类器的权重应当取负数。与其留下效果不好的基分类器，倒不如直接舍弃，所以算法第5行要求基分类器的错误率要小于0.5才继续训练。</p>
+<h3 id="样本分布更新公式">样本分布更新公式</h3>
+<ul>
+<li>下一轮训练的基分类器<span class="math inline">\(h_t\)</span>应最小化基分类器加权和<span class="math inline">\(H_{t-1}+\alpha_th_t\)</span>在原始数据分布<span class="math inline">\(\mathcal{D}\)</span>上的指数损失<span class="math inline">\(l_{exp}(H_{t-1}+\alpha_th_t|\mathcal{D})\)</span></li>
+</ul>
+<p><span class="math display">\[
+h_t(\boldsymbol{x}) = \arg\min_h l_{exp}(H_{t-1}+\alpha_th|\mathcal{D})
+\]</span></p>
+<p><span class="math inline">\(l_{exp}(H_{t-1}+\alpha_th_t|\mathcal{D})\)</span>展开可以写成： <span class="math display">\[
+l_{exp}(H_{t-1}+\alpha_th_t|\mathcal{D}) = \mathbb{E}_{\boldsymbol{x} \sim \mathcal{D}} [e^{-yH_{t-1}(\boldsymbol{x})}(e^{-yh_{t-1}(\boldsymbol{x})})^{\alpha_t}]
+\]</span></p>
+<p>根据算法第5行，<span class="math inline">\(0 &lt; \epsilon_t \le 0.5\)</span>，所以<span class="math inline">\(\alpha_t \ge 0\)</span>。最小化<span class="math inline">\(l_{exp}(H_{t-1}+\alpha_th_t|\mathcal{D})\)</span>等价于最小化<span class="math inline">\(l_{exp}(H_{t-1}+h_t|\mathcal{D})\)</span></p>
+<p><span class="math display">\[
+l_{exp}(H_{t-1}+h_t|\mathcal{D}) = \mathbb{E}_{\boldsymbol{x} \sim \mathcal{D}} [e^{-y(H_{t-1}(\boldsymbol{x})+h_t(\boldsymbol{x}))}] = \mathbb{E}_{\boldsymbol{x} \sim \mathcal{D}} [e^{-yH_{t-1}(\boldsymbol{x})} e^{-yh_t(\boldsymbol{x})}]
+\]</span></p>
+<p>将<span class="math inline">\(e^{-yh_t(\boldsymbol{x})}\)</span>用泰勒公式展开到二阶近似代替，并注意到<span class="math inline">\(y^2 = h_t(\boldsymbol{x})^2=1\)</span></p>
+<p><span class="math display">\[
+l_{exp}(H_{t-1}+h_t|\mathcal{D}) \approx \mathbb{E}_{\boldsymbol{x} \sim \mathcal{D}} [e^{-yH_{t-1}(\boldsymbol{x})} (1-yh_t({\boldsymbol{x})+\frac{y^2h_t(\boldsymbol{x})^2}{2}})] \\
+= \mathbb{E}_{\boldsymbol{x} \sim \mathcal{D}} [e^{-yH_{t-1}(\boldsymbol{x})} (1-yh_t({\boldsymbol{x})+\frac{1}{2}})]
+\]</span></p>
+<p>所以</p>
+<p><span class="math display">\[
+h_t(\boldsymbol{x}) = \arg\min_h \mathbb{E}_{\boldsymbol{x} \sim \mathcal{D}} \mathbb{E}_{\boldsymbol{x} \sim \mathcal{D}} [e^{-yH_{t-1}(\boldsymbol{x})} (1-yh({\boldsymbol{x})+\frac{1}{2}})] \\
+= \arg \max_h \mathbb{E}_{\boldsymbol{x} \sim \mathcal{D}}[e^{-yH_{t-1}(\boldsymbol{x})}yh(\boldsymbol{x})]
+\]</span></p>
+<p>配上一个归一化用的常数因子</p>
+<p><span class="math display">\[
+\frac{1}{Z_t} = \frac{1}{\mathbb{E}_{\boldsymbol{x} \sim \mathcal{D}} [e^{-yH_{t-1}(\boldsymbol{x})}]}
+\]</span></p>
+<p>原式可以改写成</p>
+<p><span class="math display">\[
+h_t(\boldsymbol{x}) = \arg \max_h \mathbb{E}_{\boldsymbol{x} \sim \mathcal{D}}[\frac{e^{-yH_{t-1}(\boldsymbol{x})}}{\mathbb{E}_{\boldsymbol{x} \sim \mathcal{D}} [e^{-yH_{t-1}(\boldsymbol{x})}]}yh(\boldsymbol{x})]
+\]</span></p>
+<p>再令</p>
+<p><span class="math display">\[
+\mathcal{D}_t(\boldsymbol{x}) = \frac{\mathcal{D}(\boldsymbol{x})e^{-yH_{t-1}(\boldsymbol{x})}}{\mathbb{E}_{\boldsymbol{x} \sim \mathcal{D}} [e^{-yH_{t-1}(\boldsymbol{x})}]}
+\]</span></p>
+<p>不难证明<span class="math inline">\(\mathcal{D}_t\)</span>表示一个新的分布，考虑<span class="math inline">\(\mathcal{D}_{t+1}\)</span>和<span class="math inline">\(\mathcal{D}_t\)</span>的关系</p>
+<p><span class="math display">\[
+\mathcal{D}_{t+1}(\boldsymbol{x}) = \frac{\mathcal{D}(\boldsymbol{x})e^{-yH_{t}(\boldsymbol{x})}}{\mathbb{E}_{\boldsymbol{x} \sim \mathcal{D}} [e^{-yH_{t}(\boldsymbol{x})}]} \\
+= \frac{\mathcal{D}(\boldsymbol{x}) e^{-yH_{t-1}(\boldsymbol{x})}e^{-y\alpha_th_t(\boldsymbol{x})}}{\mathbb{E}_{\boldsymbol{x} \sim \mathcal{D}} [e^{-yH_{t}(\boldsymbol{x})}]} \\
+=\mathcal{D}_t(\boldsymbol{x})e^{-y\alpha_th_t(\boldsymbol{x})} ·\frac{\mathbb{E}_{\boldsymbol{x} \sim \mathcal{D}} [e^{-yH_{t-1}(\boldsymbol{x})}]}{\mathbb{E}_{\boldsymbol{x} \sim \mathcal{D}} [e^{-yH_{t}(\boldsymbol{x})}]}
+\]</span></p>
+<p>这就得到了算法第7行的样本分布更新公式。</p>
+<h3 id="在新的分布下最小化分类误差">在新的分布下最小化分类误差</h3>
+<p>原式又可以改写成</p>
+<p><span class="math display">\[
+h_t(\boldsymbol{x}) = \arg \max_h \mathbb{E}_{\boldsymbol{x} \sim \mathcal{D}_t} [yh(\boldsymbol{x})]
+\]</span></p>
+<p>这表明理想的<span class="math inline">\(h_t\)</span>是在新的分布<span class="math inline">\(\mathcal{D_t}\)</span>下最小化指数损失。由<span class="math inline">\(y,h(\boldsymbol{x})\in \{-1, +1\}\)</span>，有</p>
+<p><span class="math display">\[
+yh(\boldsymbol{x}) = 1 - 2 \mathbb{I}(y \ne h(\boldsymbol{x}))
+\]</span></p>
+<p>于是原式等价于</p>
+<p><span class="math display">\[
+h_t(\boldsymbol{x}) = \arg \min_h \mathbb{E}_{\boldsymbol{x} \sim \mathcal{D}_t} \mathbb{I} (y \ne h(\boldsymbol{x})) = \arg \min_h P(y \ne h(\boldsymbol{x}))
+\]</span></p>
+<p>这说明<span class="math inline">\(h_t\)</span>不仅在分布<span class="math inline">\(\mathcal{D}_t\)</span>下最小化指数损失，同时也在最小化分类误差</p>
+]]></content>
+      <categories>
+        <category>计算机科学</category>
+      </categories>
+      <tags>
+        <tag>机器学习</tag>
+        <tag>AdaBoost</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>Hamming码</title>
+    <url>/2019/04/13/Hamming%E7%A0%81/</url>
+    <content><![CDATA[<p>总结一下Hamming距离，奇偶校验码，Hamming码的知识</p>
+<blockquote>
+<p>主要参考：《计算机网络》——Tanenbaum</p>
+</blockquote>
+<a id="more"></a>
+<h1 id="hamming码">Hamming码</h1>
+<p>在数据链路层的差错控制中，为了使接收方能够有一定程度的对传输的检错或纠错能力，并不是直接传输原始的位串，而是需要采用一些特殊的编码方式，传输经过编码后的信息。编码，就是将原本需要传输的位串增加一些冗余位，构成一个新的位串。</p>
+<h2 id="hamming距离">Hamming距离</h2>
+<p>一个编码方案的检错和纠错能力，和编码方案Hamming距离有关，以下先定义位串的Hamming距离和编码方案的Hamming距离。</p>
+<blockquote>
+<p><strong>位串的Hamming距离</strong>：两个相同位数的位串中不同位的个数称为Hamming距离</p>
+</blockquote>
+<blockquote>
+<p><strong>编码方案的Hamming距离</strong>：设<span class="math inline">\(X\)</span>是一个编码方案，<span class="math inline">\(Y\subset X\)</span>是原本需要传输的原始位串经过编码后形成的合法位串的集合，<span class="math inline">\(Y\)</span>中两个不同位串的最小Hamming距离称为<span class="math inline">\(X\)</span>的Hamming距离</p>
+</blockquote>
+<p>下面两个定理给出了编码方案的Hamming距离和检错纠错能力的关系。</p>
+<blockquote>
+<p>定理1：在一个至多出现<span class="math inline">\(d\)</span>个错误的传输中，至少需要一个Hamming距离为<span class="math inline">\(d+1\)</span>的编码方案，才能保证接收方检查出传输错误</p>
+</blockquote>
+<p><em>证明</em>：<span class="math inline">\(d\)</span>个错误至多使一个合法位串变成另一个和它Hamming距离不超过<span class="math inline">\(d\)</span>的，错误位串，但Hamming距离为<span class="math inline">\(d+1\)</span>的编码方案中，任意两个合法位串的Hamming距离<span class="math inline">\(\ge d+1\)</span>，因此可以检查出来这个传输错误的位串不合法。</p>
+<blockquote>
+<p>定理2：在一个至多出现<span class="math inline">\(d\)</span>个错误的传输中，至少需要一个Hamming距离为<span class="math inline">\(2d+1\)</span>的编码方案，才能保证接收方纠正传输错误</p>
+</blockquote>
+<p><em>证明</em>：<span class="math inline">\(d\)</span>个错误至多使一个合法位串变成另一个和它Hamming距离不超过d的错误位串，这样能保证错误位串与其他的合法位串的Hamming距离<span class="math inline">\(\ge d+1\)</span>，但与原位串的Hamming距离<span class="math inline">\(\le d\)</span>，接收方只需在合法位串中找到与该错误位串Hamming距离最小的合法位串，就可以纠正错误。</p>
+<ul>
+<li>注：Hamming距离也可以用异或运算来定义，即两个位串异或得到的新位串再按位求和</li>
+<li><em>这里挖个坑：Hamming距离应该是定义在<span class="math inline">\(\{0,1\}^n\)</span>上的一个距离</em></li>
+</ul>
+<h2 id="奇偶校验码">奇偶校验码</h2>
+<p>最简单的具有检错能力的编码方案，就是能够检查至多1位错误的编码方案，下面将看到，奇偶校验码就是这样的编码方案。</p>
+<blockquote>
+<p><strong>奇偶校验码</strong>：对一个原始位串增加一位冗余位，使得新位串中1的个数是(奇)偶数，这种编码称为奇偶校验码。</p>
+</blockquote>
+<blockquote>
+<p>定理3：奇偶校验码是一种能检查至多1位错误的编码方案</p>
+</blockquote>
+<p><em>证明</em>：由定理1，只需证明奇偶校验码的Hamming距离<span class="math inline">\(\ge 2\)</span>即可。任取两个不同的合法位串，假设其Hamming距离为1，说明这两个位串中的第<span class="math inline">\(k\)</span>位一个是0，一个是1。</p>
+<ul>
+<li><p>Case1：第<span class="math inline">\(k\)</span>位是冗余位。则这两个位串的消息位相同，按奇偶校验码的定义，消息位相同冗余位也必定相同，矛盾。</p></li>
+<li><p>Case2：第<span class="math inline">\(k\)</span>位不是冗余位。则这两个位串中1的总个数不相同，其冗余位必定也不相同，这样这两个合法位串的Hamming距离是2，矛盾。</p></li>
+</ul>
+<p>这说明不存在Hamming距离为1的两个合法位串，所以奇偶校验码的Hamming距离<span class="math inline">\(\ge 2\)</span>。</p>
+<h2 id="hamming码-1">Hamming码</h2>
+<p>最简单的具有纠错能力的编码方案，就是能够纠正至多1位错误的编码方案，Hamming码是基于奇偶校验码提出的，它在原<span class="math inline">\(m\)</span>位消息位上增加了<span class="math inline">\(r\)</span>个冗余位，编码后的位串一共有<span class="math inline">\(n=m+r\)</span>位，下面将证明，Hamming码能够纠正至多1位错误。</p>
+<p>可想而知，一个编码方案的冗余位越多，其Hamming距离应该越大，但冗余位越多传输消息的效率就越低，所以应当使用尽可能少的冗余位。</p>
+<blockquote>
+<p>定理4：若消息位的位数为<span class="math inline">\(m\)</span>，一个<span class="math inline">\(r\)</span>位冗余位的能纠正至多1位错误的编码方案，需要满足以下不等式， <span class="math display">\[ m+r+1\le 2^r\]</span></p>
+</blockquote>
+<p>这个定理实际上给出了能纠正至多1位错误的编码方案所需要的冗余位的下界</p>
+<p><em>证明</em>：<span class="math inline">\(m\)</span>位的消息位总共可表达<span class="math inline">\(2^m\)</span>条消息，每条消息经过编码后对应了编码方案中的<span class="math inline">\(2^m\)</span>个位串。每个经过编码后的正确位串是<span class="math inline">\(n\)</span>位，一个正确位串出现<span class="math inline">\(1\)</span>位错误后产生的错误位串有<span class="math inline">\(n\)</span>个，因此这个编码方案应该包括<span class="math inline">\(2^m\)</span>个正确位串，以及<span class="math inline">\(n\times 2^m\)</span>个错误位串。 两个不同的消息所对应的正确位串一定是不同的，而且错误位串也不能够有相同，否则就存在一个位串和两个正确的位串Hamming距离都是1，这个位串就无法纠错了。 <span class="math inline">\(n\)</span>位的编码总共有<span class="math inline">\(2^n\)</span>个位串，所以有<span class="math inline">\((n+1)2^m\le 2^n\)</span>，带入<span class="math inline">\(n=m+r\)</span>整理即可得到不等式$ m+r+1^r$。</p>
+<ul>
+<li>注1：同样的思路可以给出能纠正至多<span class="math inline">\(k\)</span>位错误的编码方案的冗余位下界</li>
+<li>注2：对于检错码，检查至多<span class="math inline">\(1\)</span>位错误只需要<span class="math inline">\(1\)</span>位冗余位，奇偶校验码就是一个构造性的证明</li>
+<li><em>这里再挖个坑：检查至多<span class="math inline">\(k\)</span>位错需要多少位冗余位，暂时没想到</em></li>
+</ul>
+<blockquote>
+<p><strong>Hamming码</strong>：(下标从1开始，下标都用二进制表示)下标只有一个<span class="math inline">\(1\)</span>的位是冗余位，其他是消息位。若消息位的下标中第<span class="math inline">\(k\)</span>个位是<span class="math inline">\(1\)</span>，则该消息位属于第<span class="math inline">\(k\)</span>组。第<span class="math inline">\(k\)</span>个冗余位的值要使第<span class="math inline">\(k\)</span>组中<span class="math inline">\(1\)</span>的个数为偶数，换句话说第<span class="math inline">\(k\)</span>个冗余位就是第<span class="math inline">\(k\)</span>组的奇偶校验位。</p>
+</blockquote>
+<p>Hamming码的描述有些绕，下面给出一个具体例子。</p>
+<p>例：(11,7)Hamming码 原7位消息为1000001，每位分别记为m1,m2,m3,m4,m5,m6,m7 采用11位的Hamming码，其中第0001，0010，0100，1000位是校验位，每位分别记为P1,P2,P3,P4。其他位按顺序插入消息位。</p>
+<p>先分组：m1位实际上是第0011位，因此属于0001组和0010组，m2位是第0101位，属于0001组和0100组。依次类推将消息位分好组。</p>
+<p>求校验码的值：属于0010组的有第0010，0011，0110，0111，1010，1011位，也就是P2,m1,m2,m3,m4,m6,m7，使组1的个数为偶数可算出P2为0，以此类推算出其他校验位的值，可得到编码后的位串是10111001001 下标 1 2 3 4 5 6 7 8 9 10 11 P1 P2 m1 P3 m2 m3 m4 P4 m5 m6 m7 值 1 0 1 1 1 0 0 1 0 0 1</p>
+<p>纠错方法：假设m5因为传输错误变成1，计算各组可发现0001组和1000组中1的个数不是偶数，这说明同时属于0001组和1000组的位(也就是m5)传输错误，将其取反就可恢复到正确的消息。</p>
+<ul>
+<li>注：Hamming码也可用整数拆分的语言来描述，实际上是一回事</li>
+</ul>
+<blockquote>
+<p>定理5：Hamming码的Hamming距离<span class="math inline">\(\ge 3\)</span></p>
+</blockquote>
+<p><em>证明</em>：只需证明不存在Hamming距离为<span class="math inline">\(1\)</span>和<span class="math inline">\(2\)</span>的两个正确位串即可。 由于每个消息位至少属于两组，如果两个正确位串只有<span class="math inline">\(1\)</span>位数据位不同，必定导致两个校验码不同，Hamming距离为3。如果两个正确位串只有<span class="math inline">\(1\)</span>位校验码不同，必定有其一不符合Hamming码的编码规则。因此不存在Hamming距离为<span class="math inline">\(1\)</span>的正确位串。分类讨论还可以证明其他情况。</p>
+<p>这说明Hamming码确实可以纠正至多<span class="math inline">\(1\)</span>位错误的传输</p>
+]]></content>
+      <categories>
+        <category>计算机科学</category>
+      </categories>
+      <tags>
+        <tag>计算机网络</tag>
+        <tag>Hamming码</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>匈牙利算法</title>
+    <url>/2020/03/22/Hungary/</url>
+    <content><![CDATA[<h1 id="匈牙利算法">匈牙利算法</h1>
+<p>毕设里的一个子问题是求解二分图最大权匹配，网上搜了不少资料最终决定使用KM算法。KM算法的基础是求解二分图最大匹配的匈牙利算法，现在来整理一下这几天所学。</p>
+<a id="more"></a>
+<h2 id="基础概念">基础概念</h2>
+<ul>
+<li>二分图：如果把一个图的顶点集划分成两个不相交集<span class="math inline">\(X\)</span>和<span class="math inline">\(Y\)</span>，使得图里的每一条边都分别连接<span class="math inline">\(X\)</span>和<span class="math inline">\(Y\)</span>里的顶点，这样的图就叫做二分图。</li>
+<li>匹配：图的匹配是边集的一个子集，里面的任意两条边都没有公共的顶点。</li>
+<li>最大匹配：在一个图的所有匹配里，边数最多的匹配称为最大匹配。</li>
+<li>完备匹配和完美匹配：如果一个图的某个匹配里，被划分的两个点集<span class="math inline">\(X\)</span>和<span class="math inline">\(Y\)</span>中有一个点集里的所有点都是匹配点，就称这个匹配是完备匹配。如果两个点集里都是匹配点，就称这个匹配是完美匹配。</li>
+<li>交替路：从一个未匹配点出发，经过匹配点、未匹配点、匹配点如此重复下去形成的一条路径，称为交替路。</li>
+<li>增广路：起点终点都是未匹配点的交替路称为增广路。</li>
+</ul>
+<h2 id="增广路">增广路</h2>
+<ul>
+<li>增广路一定由奇数条边组成</li>
+<li>增广路中未匹配边一定比匹配边多一条</li>
+</ul>
+<p>这两条结论非常显然：增广路的两端都是未匹配点，两端的第一段路径都是未匹配边，中间又必须是匹配边和未匹配边重复偶数次。</p>
+<p>仔细思考这两条结论就会发现：增广路通过一次“取反”操作（让匹配边和未匹配边的身份调换）就能让匹配边数+1。</p>
+<h2 id="算法的思路">算法的思路</h2>
+<p>有了上面的观察，就能够利用这个思想设计出求解最大匹配的算法了：</p>
+<p>从<span class="math inline">\(X\)</span>中取一个未匹配点<span class="math inline">\(x_1\)</span>，然后在<span class="math inline">\(Y\)</span>里取一个与之相连的点<span class="math inline">\(y_1\)</span>，如果<span class="math inline">\(y_1\)</span>还未被匹配，那直接匹配就行了；</p>
+<p>如果<span class="math inline">\(y_1\)</span>已经被匹配了，接下来的两种策略分别对应了DFS和BFS</p>
+<ol type="1">
+<li>不放过<span class="math inline">\(y_1\)</span>，回到<span class="math inline">\(X\)</span>里找到和它匹配的点<span class="math inline">\(x_2\)</span>，直接强迫<span class="math inline">\(x_2\)</span>另寻匹配点，把<span class="math inline">\(y_1\)</span>让出来给<span class="math inline">\(x_1\)</span></li>
+<li>放过<span class="math inline">\(y_1\)</span>，在<span class="math inline">\(Y\)</span>里找下一个和它相连的点<span class="math inline">\(y_2\)</span>，看能否匹配，直到<span class="math inline">\(Y\)</span>里真的没有能匹配的点了，才强迫<span class="math inline">\(x_2\)</span>另寻匹配点 ，<span class="math inline">\(x_1\)</span>自己匹配<span class="math inline">\(y_1\)</span></li>
+</ol>
+<p>那这跟增广路有什么关系呢？仔细推敲一下就能领悟其中的奥秘所在。增广路的“取反”操作与算法里的“强迫另寻匹配点”正是对应着的。换言之，<span class="math inline">\(x_1\)</span>找到了一个未匹配点，或者从<span class="math inline">\(x_1\)</span>找到了一条增广路，都能够使匹配边数+1.</p>
+<h2 id="算法的实现">算法的实现</h2>
+<p>（最近手生且毕设DDL迫在眉睫，BFS版本暂时先鸽一下~）</p>
+<h3 id="dfs版本">DFS版本</h3>
+<p>为简单起见就直接用邻接矩阵来存储图</p>
+<figure class="highlight cpp"><table><tr><td class="code"><pre><span class="line"><span class="keyword">int</span> Graph[maxm][maxn]; <span class="comment">// 邻接矩阵存储图</span></span><br><span class="line"><span class="keyword">int</span> match[maxn]; <span class="comment">// 记录匹配</span></span><br><span class="line"><span class="keyword">bool</span> inCrossPath[maxn]; <span class="comment">// 工作数组：记录该点是否已经在交错路里</span></span><br><span class="line"><span class="keyword">int</span> ans; <span class="comment">// 最大匹配数</span></span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">addEdge</span><span class="params">(<span class="keyword">int</span> u, <span class="keyword">int</span> v)</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">    Graph[u][v] = <span class="number">1</span>; <span class="comment">// 越界啥的先不管了</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>下面是核心的DFS代码</p>
+<figure class="highlight cpp"><table><tr><td class="code"><pre><span class="line"><span class="function"><span class="keyword">bool</span> <span class="title">findPath</span><span class="params">(<span class="keyword">int</span> u)</span> <span class="comment">// 为集合X里的结点u寻找匹配点</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">    <span class="keyword">for</span> (<span class="keyword">int</span> i = <span class="number">1</span>; i &lt;= maxn; i++)</span><br><span class="line">    &#123;</span><br><span class="line">        <span class="keyword">if</span> (Graph[u][i] == <span class="number">1</span> &amp;&amp; inCrossPath[i] == <span class="literal">false</span>) <span class="comment">// Y里的结点i与u相连，而且i在本次匹配中还未在交错路里</span></span><br><span class="line">        &#123;</span><br><span class="line">            inCrossPath[i] = <span class="literal">true</span>; <span class="comment">// 记录i已经在交错路里</span></span><br><span class="line">            <span class="keyword">if</span> (match[i] == <span class="number">-1</span> || findPath(match[i])) <span class="comment">// 如果i未被匹配，或者i的前任匹配点能另外找到匹配点，就让u和i匹配</span></span><br><span class="line">            &#123;</span><br><span class="line">                match[i] = u;</span><br><span class="line">                <span class="keyword">return</span> <span class="literal">true</span>;</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">return</span> <span class="literal">false</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>然后是匈牙利算法的代码</p>
+<figure class="highlight cpp"><table><tr><td class="code"><pre><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">Hungary</span><span class="params">()</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">    <span class="keyword">for</span> (<span class="keyword">int</span> i = <span class="number">1</span>; i &lt;= m; i++) <span class="comment">// 让X里每个点都寻找匹配点</span></span><br><span class="line">    &#123;</span><br><span class="line">        <span class="built_in">memset</span>(inCrossPath, <span class="literal">false</span>, <span class="keyword">sizeof</span>(inCrossPath)); <span class="comment">// 每次都要把工作数组清空</span></span><br><span class="line">        <span class="keyword">if</span> (findPath(i))</span><br><span class="line">            ans++; <span class="comment">// 无论是直接连，还是通过DFS找到增广路径然后求反，最终结果都是匹配数+1</span></span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>运行Hungary函数之后就能够求出最大匹配数，存储在match数组里的最后结果正是匹配的结果。</p>
+<h2 id="算法正确性">算法正确性</h2>
+<p>（这里也暂时鸽一下）</p>
+<h2 id="参考文献">参考文献</h2>
+<p>看了不少博客，这里列出几个我认为讲解的比较好的，感谢各位大神</p>
+<p><a href="https://www.cnblogs.com/zpfbuaa/p/7218607.html#_label1">https://www.cnblogs.com/zpfbuaa/p/7218607.html#_label1</a></p>
+<p><a href="https://www.cnblogs.com/shenben/p/5573788.html">https://www.cnblogs.com/shenben/p/5573788.html</a></p>
+<p><a href="https://blog.csdn.net/zxn0803/article/details/49995973">https://blog.csdn.net/zxn0803/article/details/49995973</a></p>
+<p><a href="https://blog.csdn.net/sixdaycoder/article/details/47680831">https://blog.csdn.net/sixdaycoder/article/details/47680831</a></p>
+]]></content>
+      <categories>
+        <category>计算机科学</category>
+      </categories>
+      <tags>
+        <tag>算法</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>Knuth-Shuffle算法</title>
+    <url>/2019/09/29/KnuthShuffle/</url>
+    <content><![CDATA[<p>问题描述：现在有n个元素存放在一个数组里，给出一种算法能够生成它们的一个排列，使得生成每种排列的概率相等。</p>
+<blockquote>
+<p>主要参考：《数据结构与算法分析——C语言描述》 Mark Allen Weiss</p>
+</blockquote>
+<a id="more"></a>
+<h1 id="knuth-shuffle算法">Knuth-Shuffle算法</h1>
+<p>不失一般性，可以记这n个元素就是整数1到n，存放在数组<span class="math inline">\(A[0...n-1]\)</span>里。并且假设计算模型里有取随机数的基本操作：</p>
+<figure class="highlight cpp"><table><tr><td class="code"><pre><span class="line"><span class="comment">// 能够以相等概率随机返回一个范围在[i,j]的整数</span></span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">randint</span><span class="params">(<span class="keyword">int</span> i, <span class="keyword">int</span> j)</span></span>;</span><br></pre></td></tr></table></figure>
+<p>这里直接给出算法的伪代码：</p>
+<figure class="highlight cpp"><table><tr><td class="code"><pre><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">Knuth_Shuffle</span><span class="params">(<span class="keyword">int</span> A[], <span class="keyword">int</span> n)</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">    <span class="keyword">for</span>(<span class="keyword">int</span> i = n - <span class="number">1</span>; i &gt;= <span class="number">0</span>; i--)</span><br><span class="line">        swap(&amp;A[i], &amp;A[randint(<span class="number">0</span>,i)]);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>不难分析得到这个算法的时间复杂度是<span class="math inline">\(O(n)\)</span>，空间复杂度如果不计原本的数组则是<span class="math inline">\(O(1)\)</span>的。</p>
+<h1 id="算法正确性的证明">算法正确性的证明</h1>
+<p>首先这个算法涉及的操作就是对<span class="math inline">\(A[0...n-1]\)</span>里的元素进行<code>swap()</code>，最后得到的当然是这n个元素的一个排列。</p>
+<p>记任意一个排列为<span class="math inline">\(a_0,a_1,...a_{n-1}\)</span>，为了得到这个排列，算法必须第一步用元素<span class="math inline">\(A[n-1]\)</span>和元素<span class="math inline">\(a_{n-1}\)</span>交换，实现这一步的概率显然是<span class="math inline">\(\frac{1}{n}\)</span>；第二步必须用元素<span class="math inline">\(a_{n-2}\)</span>和元素<span class="math inline">\(A[n-2]\)</span>交换，而这一步实际上是一个条件概率<span class="math inline">\(\frac{1}{n-1}\)</span>；以此类推，第k步必须用元素<span class="math inline">\(a_{n-k}\)</span>和元素<span class="math inline">\(A[n-k]\)</span>交换。</p>
+<p>设事件<span class="math inline">\(E_k\)</span>为算法的第k次迭代时用元素<span class="math inline">\(a_{n-k}\)</span>和元素<span class="math inline">\(A[n-k]\)</span>交换，则生成排列<span class="math inline">\(a_0,a_1,...a_{n-1}\)</span>就是事件<span class="math inline">\(\prod_{k=0}^{n-1} E_k\)</span>。展开一下就有</p>
+<p><span class="math display">\[P\{\prod_{k=0}^{n-1} E_k\} = P\{E_k\}P\{E_{k-1}|E_{k}\}...P\{E_{0}|E_{k}E_{k-1}...E_{1}\}\]</span></p>
+<p>根据上面的分析不难发现这个结果就是<span class="math inline">\(\frac{1}{n!}\)</span>，所以每种排列生成的概率是一样的。</p>
+<h1 id="其他">其他</h1>
+<p>在《数据结构与算法分析——C语言描述》中译本P27给出的算法其实是</p>
+<figure class="highlight cpp"><table><tr><td class="code"><pre><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">Knuth_Shuffle</span><span class="params">(<span class="keyword">int</span> A[], <span class="keyword">int</span> n)</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">    <span class="keyword">for</span>(<span class="keyword">int</span> i = <span class="number">1</span>; i &lt; n; i++)</span><br><span class="line">        swap(&amp;A[i], &amp;A[randint(<span class="number">0</span>,i)]);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>和最开头给出的有一点点区别，但不难证明结论是一样的。</p>
+<p><em>(Hint:从最后一次迭代往前分析即可)</em></p>
+]]></content>
+      <categories>
+        <category>计算机科学</category>
+      </categories>
+      <tags>
+        <tag>算法</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>Kuhn-Munkres算法</title>
+    <url>/2020/03/28/Kuhn-Munkres/</url>
+    <content><![CDATA[<h1 id="kuhn-munkres算法">Kuhn-Munkres算法</h1>
+<p>本文接着上一篇博客《匈牙利算法》，前篇讨论的是不带权的二分图求最大匹配，本篇讨论带权的二分图求最大权匹配——KM算法。实际上前者可以看作是后者的特殊情况，即权值只有0和1的情形。</p>
+<a id="more"></a>
+<h2 id="几个基本事实">几个基本事实</h2>
+<ul>
+<li><p>WLOG，通过人为添加权值为0的边，任一个二分图<span class="math inline">\(G\)</span>都可以被改造成完全图而不影响我们所讨论的问题，因此以下的讨论全都视作完全二分带权图（只考虑非负权值）。</p></li>
+<li><p>如前篇所述，可以通过取反增广路的操作使得匹配边数+1</p></li>
+<li><p>最大权匹配一定是完备匹配（如果最大权匹配不完备的话，说明<span class="math inline">\(X\)</span>和<span class="math inline">\(Y\)</span>至少各有一个点未被匹配，加上这条边之后权和不可能更小）</p></li>
+</ul>
+<h2 id="可行顶标与相等子图">可行顶标与相等子图</h2>
+<p><strong>顶标</strong>：顶标是一个结点函数<span class="math inline">\(l:V\to \mathbb{R}\)</span></p>
+<p><strong>可行顶标</strong>：可行顶标是满足下面不等式的顶标（即边权不能超过两端点的顶标和） <span class="math display">\[
+l(x)+l(y)\ge w(x,y), \forall x \in X, y \in Y
+\]</span> <strong>相等子图</strong>：图<span class="math inline">\(G=(V,E)\)</span>的（相对于顶标<span class="math inline">\(l\)</span>的）相等子图<span class="math inline">\(G_l=(V,E_l)\)</span>包含图<span class="math inline">\(G\)</span>的所有顶点，但只包含边权等于两端点顶标和的边。即 <span class="math display">\[
+E_l={(x,y):l(x)+l(y)=w(x,y)}
+\]</span></p>
+<blockquote>
+<p><strong>Kuhn-Munkres定理</strong>：如果<span class="math inline">\(l\)</span>是可行顶标，<span class="math inline">\(M\)</span>是相等子图<span class="math inline">\(G_l\)</span>里的完美匹配，那么<span class="math inline">\(M\)</span>是图<span class="math inline">\(G\)</span>的最大权匹配。</p>
+</blockquote>
+<p><em>证明</em>：用<span class="math inline">\(e=(e_x,e_y)\)</span>来记图中的边，<span class="math inline">\(e_x\)</span>和<span class="math inline">\(e_y\)</span>分别是两端点。任取图<span class="math inline">\(G\)</span>的一个完美匹配<span class="math inline">\(M&#39;\)</span>，容易的到下面的不等式 <span class="math display">\[
+w(M&#39;)=\sum_{e\in M&#39;} w(e) \le \sum_{e\in M&#39;} l(e_x)+l(e_y) = \sum_{v\in V} l(v)
+\]</span> 这个不等式说明任何一个完美匹配权和的上界就是所有顶标和<span class="math inline">\(\sum_{v\in V} l(v)\)</span>，现在<span class="math inline">\(M\)</span>是相等子图<span class="math inline">\(G_l\)</span>的完美匹配，从而也是原图<span class="math inline">\(G\)</span>的完美匹配，所以有 <span class="math display">\[
+w(M)=\sum_{e\in M} w(e) = \sum_{v\in V} l(v)
+\]</span> 最大权匹配一定是一个完备匹配，易知所有完备匹配的权和上界也是<span class="math inline">\(\sum_{v\in V}l(v)\)</span>，所以<span class="math inline">\(M\)</span>就是最大权匹配。</p>
+<ul>
+<li><p>KM定理将求最大权匹配问题转化成了求完美匹配问题，这是组合优化问题里经典的技巧</p></li>
+<li><p>注意KM定理的证明里实际上证明了任意一个匹配<span class="math inline">\(M\)</span>和任意一个可行顶标<span class="math inline">\(l\)</span>都满足这个不等式</p></li>
+</ul>
+<p><span class="math display">\[
+w(M)\le \sum_{v\in V}l(v)
+\]</span></p>
+<ul>
+<li>和最大流最小割定理有哪些相似之处？</li>
+</ul>
+<h2 id="km算法">KM算法</h2>
+<h3 id="算法框架">算法框架</h3>
+<ol type="1">
+<li>给定初始可行顶标<span class="math inline">\(l\)</span>和初始匹配<span class="math inline">\(M\)</span></li>
+<li>当<span class="math inline">\(M\)</span>不是<span class="math inline">\(E_l\)</span>的完美匹配时，重复以下操作
+<ol type="1">
+<li>在相等子图<span class="math inline">\(E_l\)</span>里寻找增广路，然后通过取反操作使匹配数+1</li>
+<li>如果找不到增广路，将可行顶标<span class="math inline">\(l\)</span>改进为<span class="math inline">\(l&#39;\)</span>使得<span class="math inline">\(E_l \subset E_{l&#39;}\)</span>，跳转至1</li>
+</ol></li>
+</ol>
+<ul>
+<li>如果<span class="math inline">\(G\)</span>有完美匹配，因为每次迭代要么匹配数+1要么相等子图扩大，最终算法一定会停止，而且停止时<span class="math inline">\(M\)</span>是<span class="math inline">\(E_l\)</span>的完美匹配。根据KM定理，<span class="math inline">\(M\)</span>就是<span class="math inline">\(G\)</span>的最大权匹配。</li>
+</ul>
+<h3 id="初始可行顶标和初始匹配">初始可行顶标和初始匹配</h3>
+<p>最简单的可行顶标就是取<span class="math inline">\(X\)</span>的顶标为邻接边的最大权值，<span class="math inline">\(Y\)</span>的顶标取0 <span class="math display">\[
+\forall y \in Y, l(y) = 0 \\
+\forall x \in X, l(x) = \max_{y\in Y}\{w(x,y)\}
+\]</span> 这样显然满足可行顶标的要求 <span class="math display">\[
+\forall x \in X, y \in Y, w(x) \le l(x) + l(y)
+\]</span> 最简单的初始匹配就是<span class="math inline">\(M=\phi\)</span></p>
+<h3 id="改进可行顶标">改进可行顶标</h3>
+<p>设<span class="math inline">\(l\)</span>是一个可行顶标，顶点<span class="math inline">\(u\in V\)</span>，点集<span class="math inline">\(S\subseteq V\)</span>，定义点<span class="math inline">\(u\)</span>的邻接集<span class="math inline">\(N_l(u)\)</span>和<span class="math inline">\(S\)</span>的邻接集<span class="math inline">\(N_l(S)\)</span> <span class="math display">\[
+N_l(u) = \{v:(u,v)\in E_l\} \\
+N_l(S) = \bigcup_{u\in S} N_l(u)
+\]</span></p>
+<blockquote>
+<p><strong>引理</strong>：设<span class="math inline">\(S\subseteq X, T=N_l(S)\ne Y\)</span>，令<span class="math inline">\(\alpha_l\)</span>为</p>
+</blockquote>
+<p><span class="math display">\[
+\alpha_l = \min_{x\in S,y\notin T} \{l(x)+l(y)-w(x,y)\}
+\]</span> 令顶标<span class="math inline">\(l&#39;\)</span>为 <span class="math display">\[
+l&#39;(v) =
+\begin{cases}
+l(v)-\alpha_l,  &amp; v\in S \\
+l(v)+\alpha_l, &amp; v\in T \\
+l(v), &amp; otherwise
+\end{cases}
+\]</span> 那么<span class="math inline">\(l&#39;\)</span>也是一个可行顶标，并且</p>
+<ol type="1">
+<li>若<span class="math inline">\((x,y)\in E_l,x\in S,y\in T\)</span>，那么<span class="math inline">\((x,y)\in E_{l&#39;}\)</span></li>
+<li>若<span class="math inline">\((x,y)\in E_l,x\notin S,y\notin T\)</span>，那么<span class="math inline">\((x,y)\in E_{l&#39;}\)</span></li>
+<li>满足<span class="math inline">\(x\in S, y\notin T\)</span>的边<span class="math inline">\((x,y)\)</span>可能属于新的相等子图<span class="math inline">\(E_{l&#39;}\)</span></li>
+</ol>
+<ul>
+<li>这个引理说明：通过这种方式改进可行顶标，能够使原先在相等子图里的边仍然在相等子图里，有一端在<span class="math inline">\(S\)</span>里，另一端不在<span class="math inline">\(T\)</span>里的边有可能被纳入新的相等子图</li>
+</ul>
+<h3 id="伪代码">伪代码</h3>
+<ol type="1">
+<li><p>初始化可行顶标<span class="math inline">\(l\)</span>和相等子图<span class="math inline">\(E_l\)</span>的初始匹配<span class="math inline">\(M\)</span> <span class="math display">\[
+\forall y \in Y, l(y) = 0 \\
+\forall x \in X, l(x) = \max_{y\in Y}\{w(x,y)\} \\
+M=\phi
+\]</span></p></li>
+<li><p>若<span class="math inline">\(M\)</span>已经是完美匹配，停止算法；否则，选取未匹配点<span class="math inline">\(u\in X\)</span>，令<span class="math inline">\(S = \{u\}， T=\phi\)</span></p></li>
+<li><p>若<span class="math inline">\(N_l(S) = T\)</span>，更新可行顶标 <span class="math display">\[
+\alpha_l = \min_{x\in S,y\notin T} \{l(x)+l(y)-w(x,y)\} \\
+l&#39;(v) =
+\begin{cases}
+l(v)-\alpha_l,  &amp; v\in S \\
+l(v)+\alpha_l, &amp; v\in T \\
+l(v), &amp; otherwise
+\end{cases}
+\]</span></p></li>
+<li><p>若<span class="math inline">\(N_l(S)\ne T\)</span>，选取<span class="math inline">\(y\in N_l(S) - T\)</span></p>
+<ol type="1">
+<li>若<span class="math inline">\(y\)</span>是未匹配点，那么从<span class="math inline">\(u\)</span>到<span class="math inline">\(y\)</span>就找到了一条增广路，取反使匹配数+1，跳转至2</li>
+<li>若<span class="math inline">\(y\)</span>是匹配点，设<span class="math inline">\(y\)</span>目前与<span class="math inline">\(z\)</span>匹配，令<span class="math inline">\(S=S\cup \{z\},T=T\cup \{y\}\)</span>，跳转至3</li>
+</ol></li>
+</ol>
+<h3 id="算法正确性">算法正确性</h3>
+<p>由引理保证了算法在执行过程一致保持着顶标的可行性，算法通过改变可行顶标从而逐渐扩大相等子图。每次找到一个<span class="math inline">\(Y\)</span>里的未匹配点，就使得匹配数+1。最终算法会在达到完美匹配的时候终止，根据KM定理，就得到了原图的最大权匹配。</p>
+<h3 id="时间复杂度分析">时间复杂度分析</h3>
+<p>在具体实现中，通常为每个<span class="math inline">\(y\)</span>结点定义一个松弛度存放在数组里，这样可以减少<span class="math inline">\(\alpha_l\)</span>的计算量 <span class="math display">\[
+slack_y = \min_{x\in S} \{l(x) + l(y) - w(x,y)\}
+\]</span> 首先将算法运行的过程分为<span class="math inline">\(|M|\)</span>个阶段，使匹配数+1的若干次迭代记作一个阶段，每个阶段都经历了若干次步骤2、3、4，下面来具体分析每个步骤的时间复杂度。</p>
+<p>步骤2：每个阶段都只会经历一次步骤2。初始化<span class="math inline">\(S\)</span>和<span class="math inline">\(T\)</span>显然是<span class="math inline">\(O(1)\)</span>的，但此时还要初始化<span class="math inline">\(slack\)</span>数组。因为<span class="math inline">\(S\)</span>里只有1个点，只需要<span class="math inline">\(|S|\)</span>次计算就可初始化完毕，所以步骤2总共是<span class="math inline">\(O(|V|)\)</span>的。</p>
+<p>步骤3：计算<span class="math inline">\(\alpha_l=\min_{y\in T} slack_y\)</span>这一步是<span class="math inline">\(O(|T|)\)</span>的，更新可行顶标<span class="math inline">\(l&#39;\)</span>是<span class="math inline">\(O(|T|+|S|)\)</span>的，更新完可行顶标之后还要重新更新<span class="math inline">\(slack\)</span>数组，根据定义不难推出这里只需要执行<span class="math inline">\(\forall y\notin T, slack_y = slack_y - \alpha_l\)</span>，所以是<span class="math inline">\(O(|Y-T|)\)</span>的。要注意的是步骤3在每个阶段可能经历多次，但最多只会经历<span class="math inline">\(O(|Y|)\)</span>次（因为每经历一次步骤4如果需要回到步骤3的话，一定使<span class="math inline">\(T\)</span>增加一个点）。上面的复杂度全都可以放缩成<span class="math inline">\(O(|V|)\)</span>，所以步骤3总共是<span class="math inline">\(O(|V|^2)\)</span>的。</p>
+<p>步骤4：第1种情况在每个阶段只会经历一次，取反操作是<span class="math inline">\(O(|V|)\)</span>的。第2种情况同步骤3的分析，至多经历<span class="math inline">\(O(|V|)\)</span>次，更新集合<span class="math inline">\(S\)</span>和<span class="math inline">\(T\)</span>只需要<span class="math inline">\(O(1)\)</span>的时间。但由于集合<span class="math inline">\(S\)</span>多加了一个点，需要更新<span class="math inline">\(slack\)</span>数组，<span class="math inline">\(\forall y\notin T, slack_y = \min \{slack_y, l(z)+l(y)-w(z,y)\}\)</span>，这需要<span class="math inline">\(O(|Y|)\)</span>的时间。步骤4总共是<span class="math inline">\(O(|V|^2)\)</span>的。</p>
+<p>最后，因为匹配数<span class="math inline">\(|M|\)</span>不可能超过<span class="math inline">\(|V|/2\)</span>，所以阶段数也是<span class="math inline">\(O(|V|)\)</span>的，得出整个算法的时间复杂度是<span class="math inline">\(O(|V|^3)\)</span></p>
+<h2 id="cpp实现">cpp实现</h2>
+<p>由于时间紧迫，用松弛度数组优化后的<span class="math inline">\(O(|V|^3)\)</span>的算法暂时先挖个坑以后再填。这里给出原始的<span class="math inline">\(O(|V|^4)\)</span>实现。</p>
+<p>用邻接矩阵存储二分图，两个数组存储顶标，match数组用来记录匹配（记录增广路），S和T两个数组来记录算法里的两个集合<span class="math inline">\(S\)</span>和<span class="math inline">\(T\)</span></p>
+<figure class="highlight cpp"><table><tr><td class="code"><pre><span class="line"><span class="keyword">int</span> Weight[maxm][maxn];</span><br><span class="line"><span class="keyword">int</span> Lx[maxm], Ly[maxn]; <span class="comment">// 顶标</span></span><br><span class="line"><span class="keyword">int</span> match[maxn];    <span class="comment">// 记录匹配</span></span><br><span class="line"><span class="keyword">bool</span> S[maxm], T[maxn];  <span class="comment">// 算法中的两个集合S和T</span></span><br></pre></td></tr></table></figure>
+<p>步骤1的初始化可行顶标和初始化匹配写成一个函数</p>
+<figure class="highlight cpp"><table><tr><td class="code"><pre><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">Init</span><span class="params">()</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">    <span class="comment">// 将X集合的顶标设为最大边权，Y集合的顶标设为0</span></span><br><span class="line">    <span class="keyword">for</span> (<span class="keyword">int</span> i = <span class="number">1</span>; i &lt;= m; i++)</span><br><span class="line">    &#123;</span><br><span class="line">        Lx[i] = <span class="number">0</span>;</span><br><span class="line">        <span class="keyword">for</span> (<span class="keyword">int</span> j = <span class="number">1</span>; j &lt;= n; j++)</span><br><span class="line">        &#123;</span><br><span class="line">            match[j] = <span class="number">0</span>;   <span class="comment">// match记录的是Y集合里的点与谁匹配</span></span><br><span class="line">            Ly[j] = <span class="number">0</span>;</span><br><span class="line">            Lx[i] = max(Lx[i], Weight[i][j]);</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>步骤3的更新顶标就直接用没优化前的原始实现了</p>
+<figure class="highlight cpp"><table><tr><td class="code"><pre><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">update</span><span class="params">()</span> <span class="comment">// 更新顶标</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">    <span class="comment">// 计算a</span></span><br><span class="line">    <span class="keyword">int</span> a = <span class="number">1</span> &lt;&lt; <span class="number">30</span>;</span><br><span class="line">    <span class="keyword">for</span> (<span class="keyword">int</span> i = <span class="number">1</span>; i &lt;= m; i++)</span><br><span class="line">        <span class="keyword">if</span> (S[i])</span><br><span class="line">            <span class="keyword">for</span> (<span class="keyword">int</span> j = <span class="number">1</span>; j &lt;= n; j++)</span><br><span class="line">                <span class="keyword">if</span> (!T[j])</span><br><span class="line">                    a = min(a, Lx[i] + Ly[j] - Weight[i][j]);</span><br><span class="line"></span><br><span class="line">    <span class="comment">// 修改顶标</span></span><br><span class="line">    <span class="keyword">for</span> (<span class="keyword">int</span> i = <span class="number">1</span>; i &lt;= m; i++)</span><br><span class="line">        <span class="keyword">if</span> (S[i])</span><br><span class="line">            Lx[i] -= a;</span><br><span class="line">    <span class="keyword">for</span> (<span class="keyword">int</span> j = <span class="number">1</span>; j &lt;= n; j++)</span><br><span class="line">        <span class="keyword">if</span> (T[j]) </span><br><span class="line">            Ly[j] += a;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>步骤4可以用递归来实现，写成了DFS（这里和前篇的匈牙利算法实现非常相似，因为都是在寻找增广路）</p>
+<figure class="highlight cpp"><table><tr><td class="code"><pre><span class="line"><span class="function"><span class="keyword">bool</span> <span class="title">findPath</span><span class="params">(<span class="keyword">int</span> i)</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">    S[i] = <span class="literal">true</span>;</span><br><span class="line">    <span class="keyword">for</span> (<span class="keyword">int</span> j = <span class="number">1</span>; j &lt;= n; j++)</span><br><span class="line">    &#123;</span><br><span class="line">        <span class="keyword">if</span> (Lx[i] + Ly[j] == Weight[i][j] &amp;&amp; !T[j]) <span class="comment">// 找出在相等子图里又还未被标记的边</span></span><br><span class="line">        &#123;</span><br><span class="line">            T[j] = <span class="literal">true</span>;</span><br><span class="line">            <span class="keyword">if</span> (!match[j] || findPath(match[j])) <span class="comment">// 未被匹配，或者已经匹配又找到增广路</span></span><br><span class="line">            &#123;</span><br><span class="line">                match[j] = i;</span><br><span class="line">                <span class="keyword">return</span> <span class="literal">true</span>;</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">return</span> <span class="literal">false</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>然后就是整个算法的合写</p>
+<figure class="highlight cpp"><table><tr><td class="code"><pre><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">KM</span><span class="params">()</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">    Init();</span><br><span class="line"></span><br><span class="line">    <span class="keyword">for</span> (<span class="keyword">int</span> i = <span class="number">1</span>; i &lt;= m; i++)</span><br><span class="line">    &#123;</span><br><span class="line">        <span class="keyword">while</span> (<span class="literal">true</span>)</span><br><span class="line">        &#123;</span><br><span class="line">            <span class="keyword">for</span> (<span class="keyword">int</span> i = <span class="number">1</span>; i &lt;= m; i++)</span><br><span class="line">                S[i] = <span class="number">0</span>;</span><br><span class="line">            <span class="keyword">for</span> (<span class="keyword">int</span> j = <span class="number">1</span>; j &lt;= n; j++)</span><br><span class="line">                T[j] = <span class="number">0</span>;</span><br><span class="line">            <span class="keyword">if</span> (!findPath(i))</span><br><span class="line">                update();</span><br><span class="line">            <span class="keyword">else</span></span><br><span class="line">                <span class="keyword">break</span>;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>最后调用即可，完成后查看match数组就能查看匹配结果</p>
+<h2 id="参考文献">参考文献</h2>
+<p><a href="https://blog.csdn.net/sixdaycoder/article/details/47720471">受益匪浅的一篇博客</a></p>
+<p><a href="https://www.cnblogs.com/zpfbuaa/p/7218607.html#_label1">另一篇受益匪浅的博客</a></p>
+<p><a href="https://blog.sengxian.com/algorithms/km">又一篇受益匪浅的博客</a></p>
+<p><a href="https://www.cnblogs.com/wenruo/p/5264235.html">形象描述算法运行过程</a></p>
+<p><a href="https://www.mina.moe/archives/12170">线性规划的观点值得一看</a></p>
+<p><a href="http://longrm.com/2018/05/05/2018-05-05-KM/">一篇介绍的非常详细的博客</a></p>
+<p><a href="https://www.cse.ust.hk/~golin/COMP572/Notes/Matching.pdf">本文撰写时的主要参考来源</a></p>
+<p><a href="https://www.researchgate.net/publication/290437481_Tutorial_on_Implementation_of_Munkres&#39;_Assignment_Algorithm">一篇Murray State University的KM算法教程</a></p>
+<p>最后放上Kuhn和Munkres的论文</p>
+<p>[1] Munkres, James. "Algorithms for the assignment and transportation problems." Journal of the society for industrial and applied mathematics 5.1 (1957): 32-38.</p>
+<p>[2] Kuhn, Harold W. "The Hungarian method for the assignment problem." <em>Naval research logistics quarterly</em> 2.1‐2 (1955): 83-97.</p>
+]]></content>
+      <categories>
+        <category>计算机科学</category>
+      </categories>
+      <tags>
+        <tag>图算法，最大权匹配</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>Linux目录结构</title>
+    <url>/2019/12/17/Linux%E7%9B%AE%E5%BD%95%E7%BB%93%E6%9E%84/</url>
+    <content><![CDATA[<blockquote>
+<p>尚硅谷 韩顺平 Linux教程</p>
+</blockquote>
+<a id="more"></a>
+<h1 id="linux世界里一切皆文件">Linux世界里，一切皆文件</h1>
+<ul>
+<li>/bin Binary的缩写，存放常用的程序</li>
+<li>/sbin Super User的缩写，存放超级管理员使用的程序</li>
+<li>/home 普通用户的主目录，每个用户有一个自己的目录，以账号命名</li>
+<li>/root 超级管理员用户的主目录</li>
+<li>/lib 系统开机所需的基本动态链接库，类似于Windows下的DLL文件</li>
+<li>/lost+found 一般为空，当系统非法关机时存放一些文件</li>
+<li>/etc 配置文件</li>
+<li>/usr 用户的应用程序和文件，类似Windows下的Program files</li>
+<li>/boot 启动Linux使用的文件</li>
+<li>/proc 系统内存的映射</li>
+<li>/srv 系统服务</li>
+<li>/sys 与内核有关</li>
+<li>/tmp 临时文件</li>
+<li>/dev 类似于Windows下的设备管理器</li>
+<li>/media U盘、光驱等挂载</li>
+<li>/mnt 临时挂载别的文件系统</li>
+<li>/opt 安装包默认存放的目录</li>
+<li>/usr/local 安装过后的软件默认目录</li>
+<li>/var 日志文件</li>
+<li>/selinux 安全子系统，它能控制程序只能访问特定文件</li>
+</ul>
+<h1 id="总结">总结</h1>
+<p>Linux目录中有且只有一个根目录，各个目录存放的内容是规划好的，Linux是以文件的形式管理我们的设备，在Linux中一切皆文件。</p>
+]]></content>
+      <categories>
+        <category>Linux</category>
+      </categories>
+      <tags>
+        <tag>Linux</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>SEIR模型简介</title>
+    <url>/2020/02/01/SEIR/</url>
+    <content><![CDATA[<h1 id="背景">背景</h1>
+<p>2019年年末，中国武汉出现了由某种新型冠状病毒感染的肺炎疫情，其严重程度与2003年SARS疫情比起有过之而无不及。在国家全力做好疫情防控工作的同时，世界各地研究者纷纷对此次疫情进行评估和预测，短时间内诞生了不少此次疫情的相关文献。</p>
+<p>SEIR模型是诸多传染病模型中非常经典的一个微分方程模型，此时也被许多研究者采用。</p>
+<blockquote>
+<p>参考文献：JL Aron, IB Schwartz. Seasonality and Period-doubling Bifurcation in an Epidemic Model - Journal of theoretical biology, 1984</p>
+</blockquote>
+<a id="more"></a>
+<h1 id="模型概要">模型概要</h1>
+<p>一个地区的人可以被划分为以下四类人群：Susceptibles（易感者），Exposed（潜伏者），Infectives（传染者），Recovered（康复者）</p>
+<p>易感者即可能患该流行病的人；潜伏者是已经携带流行病的病原体但仍未达到传染水平的人；传染者是携带病原体并且可以传播给其他人的人；康复者是经过治疗从该传染病中康复的人；</p>
+<h1 id="模型假设">模型假设</h1>
+<ol type="1">
+<li><p>设<span class="math inline">\(S,E,I,R\)</span>是四类对应人群人数占比，则有 <span class="math display">\[
+S(t)+E(t)+I(t)+R(t)=1
+\]</span></p></li>
+<li><p>假设该地区人数不变，即出生速率和死亡速率都是<span class="math inline">\(\mu\)</span></p></li>
+<li><p>潜伏者在一段时间后转变为传染者的概率不随时间变化</p></li>
+<li><p>一名潜伏者经过时间<span class="math inline">\(\tau\)</span>仍为潜伏者的概率是<span class="math inline">\(e^{-\alpha\tau}\)</span>，<span class="math inline">\(1/\alpha\)</span>是平均潜伏期</p></li>
+<li><p>传染者经过时间<span class="math inline">\(\tau\)</span>后才康复的概率是<span class="math inline">\(e^{-\gamma \tau}\)</span>，<span class="math inline">\(1/\gamma\)</span>是康复需要的平均时间</p></li>
+<li><p>康复者永久免疫该传染病</p></li>
+</ol>
+<h1 id="符号约定">符号约定</h1>
+<p>该地区的出生速率和死亡速率<span class="math inline">\(\mu\)</span>：单位时间内出生的人数和死亡人数</p>
+<p>接触速率<span class="math inline">\(\beta(t)\)</span>：一名传染者在单位时间内接触到易感人群的平均人数</p>
+<p>平均潜伏期<span class="math inline">\(1/\alpha\)</span>：一名潜伏者平均需要经过 <span class="math inline">\(1/\alpha\)</span>转变为传染者</p>
+<p>平均康复时间<span class="math inline">\(1/\gamma\)</span>：一名传染者平均需要经过<span class="math inline">\(1/\gamma\)</span>康复</p>
+<h1 id="模型建立">模型建立</h1>
+<p>设该地区总人数是<span class="math inline">\(N\)</span></p>
+<p>易感人群的改变量由出生人数，转化为潜伏人群的人数，死亡人数三部分组成： <span class="math display">\[
+NS(t+\Delta t) - NS(t) = N\mu\Delta t - N\beta(t)S(t)I(t)\Delta t - N\mu S(t)\Delta t
+\]</span> 在可微的条件下可以改写成常微分方程： <span class="math display">\[
+S&#39;(t) = \mu - \beta(t)S(t)I(t) - \mu S(t)
+\]</span> 潜伏人群的改变量由易感人群转化，转化为传染人群，死亡人数三部分组成： <span class="math display">\[
+NE(t+\Delta t) - NE(t) = N\beta(t)S(t)I(t)\Delta t - NE(t)\frac{\Delta t}{1/\alpha}
+\]</span> 改写为ODE： <span class="math display">\[
+E&#39;(t) = \beta(t)S(t)I(t) - (\mu + \alpha)E(t)
+\]</span> 传染人群的改变量由潜伏人群转化，死亡人数，康复人数三部分组成： <span class="math display">\[
+NI(t+\Delta t) - NI(t) = NE(t)\frac{\Delta t}{1/\alpha} - N\mu I(t) - NI(t)\frac{\Delta t}{1/\gamma}
+\]</span> 改写为ODE： <span class="math display">\[
+I&#39;(t) = \alpha E(t) - (\mu + \gamma)I(t)
+\]</span></p>
+<p>最后康复人群的改变量由传染者康复，死亡人数组成： <span class="math display">\[
+NR(t+\Delta t) - NR(t) = N\frac{\Delta t}{1/\gamma}I(t) - \mu R(t)
+\]</span> 改写为ODE： <span class="math display">\[
+R&#39;(t) = \gamma I(t) - \mu R(t)
+\]</span> 这样就得到了描述该地区各类人群数量变化的微分方程组，这就是SEIR模型： <span class="math display">\[
+\left\{
+\begin{array}\\
+S&#39;(t) = \mu - \beta(t)S(t)I(t) - \mu S(t) \\
+E&#39;(t) = \beta(t)S(t)I(t) - (\mu + \alpha)E(t) \\
+I&#39;(t) = \alpha E(t) - (\mu + \gamma)I(t) \\
+R&#39;(t) = \gamma I(t) - \mu R(t)
+\end{array}
+\right.
+\]</span> 检查一下的确满足<span class="math inline">\(S(t)+E(t)+I(t)+R(t)=1\)</span></p>
+<h1 id="假设4和5的解释">假设4和5的解释</h1>
+<p>假设平均潜伏期是<span class="math inline">\(1/\alpha\)</span>，潜伏者转化为传染者的数量是随机变量<span class="math inline">\(X\)</span>，根据泊松过程，则有 <span class="math display">\[
+P(X=k,t)=\frac{(\alpha t)^k}{k!}e^{-\alpha t}
+\]</span> 设连续两名潜伏者转化为传染者的时间差是随机变量<span class="math inline">\(Y\)</span>，容易知道 <span class="math display">\[
+P(Y&gt;t)=P(X=0,t)=e^{-\alpha t}
+\]</span> 而这个概率<span class="math inline">\(P(Y&gt;t)\)</span>又可以解释为一名潜伏者经过时间<span class="math inline">\(t\)</span>仍为潜伏者的概率。</p>
+]]></content>
+      <categories>
+        <category>数学模型</category>
+      </categories>
+      <tags>
+        <tag>数学模型、预测、微分方程</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>PDCureses库的安装和使用</title>
+    <url>/2019/07/28/PDCurses/</url>
+    <content><![CDATA[<p>闲来无事想倒腾倒腾一些简单的C++库，在某个编程学习网站上看到有用PDCurses写一个2048的项目，但环境配置的教程已经过时好久，折腾了几个小时终于弄好- -。写个文档来方便一下像我这样的弱渣们。 <a id="more"></a></p>
+<h1 id="windows下pdcurses库的安装和使用">Windows下PDCurses库的安装和使用</h1>
+<h2 id="下载">下载</h2>
+<p>这个库可以从<a href="https://pdcurses.org/">官网</a>或者<a href="https://github.com/wmcbrine/PDCurses">github</a>下载得到，笔者也已经fork到自己的github里</p>
+<h2 id="安装">安装</h2>
+<p>下载后解压是一个叫做<code>PDCurses-master</code>的文件夹，在Windows下我们要使用的是<code>PDCurses-master\wincon</code>文件夹里面的东西.</p>
+<p>用Git-Bash或者控制台cmd进入<code>PDCurses-master\wincon</code>文件夹，接下来用编译器对这个文件夹里的文件进行编译</p>
+<p>编译器和makefile文件对应如下：</p>
+<pre><code>Makefile      - GCC (MinGW or Cygnus)
+Makefile.bcc  - Borland C++
+Makefile.vc   - Microsoft Visual C++
+Makefile.wcc  - Watcom</code></pre>
+<p>make指令和编译器对应如下:</p>
+<pre><code>mingw32-make    - MinGW
+wmake           - Watcom
+nmake           - MSVC</code></pre>
+<p>编译可选参数:</p>
+<pre><code>WIDE=Y  支持Unicode
+UTF8=Y  使用UTF-8(必须搭配WIDE=Y使用)
+DLL=Y   生成DLL(源文件需要加上#define PDC_DLL_BUILD)</code></pre>
+<p>根据上面的对应关系输入make命令，例如笔者使用MinGW并且支持Unicode则输入</p>
+<pre><code>mingw32-make -f Makefile WIDE=Y</code></pre>
+<p><strong>注意：如果编译失败且错误信息与"PCONSOLE_SCREEN_BUFFER_INFOEX"有关时，加上"INFOEX=N"编译参数即可</strong></p>
+<h2 id="使用">使用</h2>
+<p>编译完成之后在<code>wincon</code>文件夹会得到一系列o文件，找到唯一的a文件<code>pdcurses.a</code>，再在<code>PDCurses-master</code>找到<code>curses.h</code>文件，将这两个文件放到需要使用的项目的根目录下。</p>
+<p>头文件的使用：</p>
+<pre><code>#include&quot;curses.h&quot;</code></pre>
+<p>a文件的使用：</p>
+<p>以codeblocks为例，在设置-编译器设置-链接器设置，添加链接库，把pdcurses.a文件添加进去即可</p>
+<h2 id="测试">测试</h2>
+<p>这里给出一段测试库的代码：</p>
+<pre><code>#include &lt;cstdio&gt;
+#include &quot;curses.h&quot;
+using namespace std;
+void initialize() &#123;
+    // ncurses初始化
+    initscr();
+    // 按键不需要输入回车直接交互
+    cbreak();
+    // 按键不显示
+    noecho();
+    // 隐藏光标
+    curs_set(0);
+    // 随机数
+    srand(time(NULL));
+&#125;
+void shutdown() &#123;
+    // ncurses清理
+    endwin();
+&#125;
+int main() &#123;
+    initialize();
+    char ch = &#39;n&#39;;
+    do &#123;
+        move(5, 5);
+        addch(ch);
+        mvprintw(2, 2, &quot;Hello world!&quot;);
+        ch = getch();
+    &#125; while (ch != &#39;Q&#39; &amp;&amp; ch != &#39;q&#39;);
+    shutdown();
+    return 0;
+&#125;</code></pre>
+]]></content>
+      <categories>
+        <category>计算机科学</category>
+      </categories>
+      <tags>
+        <tag>C++库</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>Testing Markdown with Hexo</title>
+    <url>/2019/04/03/hello-world/</url>
+    <content><![CDATA[<blockquote>
+<p>这里用来测试read more功能 成功</p>
+</blockquote>
+<a id="more"></a>
+<h1 id="markdown常用语法">Markdown常用语法</h1>
+<h2 id="无序列表">无序列表</h2>
+<ul>
+<li>文本1</li>
+<li>文本2</li>
+<li>文本3</li>
+</ul>
+<h2 id="有序列表">有序列表</h2>
+<ol type="1">
+<li>文本1</li>
+<li>文本2</li>
+<li>文本3</li>
+</ol>
+<h2 id="插入图片和链接">插入图片和链接</h2>
+<p><a href="https://piggerzzm.github.io">My website</a> <img src="/images/ZZM.jpg" width="500" hegiht="313" align=center /></p>
+<h2 id="引用">引用</h2>
+<blockquote>
+<p>天涯何处无芳草，何必要在大学找。</p>
+</blockquote>
+<p>引用书上的句子</p>
+<blockquote><p>Do not just seek happiness for yourself. Seek happiness for all. Through kindness. Through mercy.</p>
+<footer><strong>David Levithan</strong><cite>Wide Awake</cite></footer></blockquote>
+<p>引用网站</p>
+<blockquote><p>Every interaction is both precious and an opportunity to delight.</p>
+<footer><strong>Seth Godin</strong><cite><a href="http://sethgodin.typepad.com/seths_blog/2009/07/welcome-to-island-marketing.html">Welcome to Island Marketing</a></cite></footer></blockquote>
+<h2 id="斜体和粗体">斜体和粗体</h2>
+<p><em>斜体</em> <strong>粗体</strong></p>
+<h2 id="to-do-list">To-do List</h2>
+<ul class="task-list">
+<li><input type="checkbox" disabled="" checked="" />
+已完成项目1<ul class="task-list">
+<li><input type="checkbox" disabled="" checked="" />
+已完成事项</li>
+<li><input type="checkbox" disabled="" />
+代办事项</li>
+</ul></li>
+<li><input type="checkbox" disabled="" />
+代办项目2</li>
+<li><input type="checkbox" disabled="" />
+代办项目3</li>
+</ul>
+<h2 id="代码块">代码块</h2>
+<p>这是一段C代码：</p>
+<figure class="highlight cpp"><table><tr><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;stdio.h&gt;</span></span></span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">main</span><span class="params">()</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">    <span class="built_in">printf</span>(<span class="string">&quot;Hello world\n&quot;</span>);</span><br><span class="line">    <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<figure class="highlight c++"><table><tr><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;stdio.h&gt;</span></span></span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">main</span><span class="params">()</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">    <span class="built_in">printf</span>(<span class="string">&quot;Hello world\n&quot;</span>);</span><br><span class="line">    <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h2 id="newton-leibniz公式">Newton-Leibniz公式</h2>
+<h3 id="行内">行内</h3>
+<p>$ _a^bf'(x)dx=f(b)-f(a) $ ### 单独显示 <span class="math display">\[ \int_a^bf&#39;(x)dx=f(b)-f(a) \]</span></p>
+]]></content>
+      <categories>
+        <category>Test</category>
+      </categories>
+      <tags>
+        <tag>Test</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>Logistic Regression小结</title>
+    <url>/2020/04/25/logistic%20Regression/</url>
+    <content><![CDATA[<h1 id="logistic-regression小结">Logistic Regression小结</h1>
+<p>总结一下Logistic Regression。</p>
+<blockquote>
+<p>参考文献：西瓜书，Coursera 《Machine learning》 吴恩达</p>
+</blockquote>
+<a id="more"></a>
+<h2 id="二分类任务">二分类任务</h2>
+<p>给定数据集<span class="math inline">\(D=\{(\boldsymbol{x}_i,y_i)\}_{i=1}^m\)</span>，其中<span class="math inline">\(\boldsymbol{x}_i \in \mathbb{R}^n\)</span>为样本，<span class="math inline">\(y_i\in \{0,1\}\)</span>分别代表正类和反类的标记。训练一个分类器<span class="math inline">\(f:\mathbb{R}^n \to \{0,1\}\)</span>。</p>
+<p>Logistic Regression是用来解决二分类任务的一种分类器，经过一些修改也可以用作多分类问题。</p>
+<h2 id="logistic-regression的假设函数对数几率函数">Logistic Regression的假设函数——对数几率函数</h2>
+<p>Logistic Regression的想法是用广义线性回归模型来解决二分类问题，首先要找一个假设函数<span class="math inline">\(f:\mathbb{R}^n \to \{0,1\}\)</span>来做拟合。值域是一个离散的集合<span class="math inline">\(\{0,1\}\)</span>，最理想的假设函数应当是单位阶跃函数，即</p>
+<p><span class="math display">\[
+f(x) =
+\begin{cases}
+1,  &amp; x&gt;0 \\
+0.5, &amp; x=0 \\
+0, &amp; x&lt;0
+\end{cases}
+\]</span></p>
+<p>很明显，这个函数不光滑甚至不连续，如果用它会出现很多问题。Logistic Regression采用了对数几率函数(logistic function)来替代它：</p>
+<p><span class="math display">\[
+f(x) = \frac{1}{1+e^{-x}}
+\]</span></p>
+<p>容易看出对数几率函数的值域是<span class="math inline">\((0,1)\)</span>，而且它在<span class="math inline">\(x=0\)</span>处的斜率非常大。（注意：值域中的0和1是取不到的）</p>
+<p><img src="/images/logistic.jpg" width="500" hegiht="313" align=center /></p>
+<p>给这个对数几率函数加上待训练的参数<span class="math inline">\(\boldsymbol{w}\)</span>和<span class="math inline">\(b\)</span>，就得到了我们需要的假设函数：</p>
+<p><span class="math display">\[
+f(\boldsymbol{x}) = \frac{1}{1 + e^{-( \boldsymbol{w}^T \boldsymbol{x} + b ) }}
+\]</span></p>
+<h2 id="logistic-regression的训练方法极大似然估计">Logistic Regression的训练方法——极大似然估计</h2>
+<p>回归问题估计参数一般的方法是最小二乘法，但是注意到这个分类器的值域是取不到<span class="math inline">\(0\)</span>和<span class="math inline">\(1\)</span>的，训练集里所有样本的“对数几率”都是无穷，也就是说，最小二乘法失效了。</p>
+<ul>
+<li>由此也可以看出，Logistic Regression并不是严格意义上的回归模型，它叫做Regression只是因为历史原因而已。</li>
+</ul>
+<p>Logistic Regression里一个关键的处理是把输出<span class="math inline">\(f(\boldsymbol{x})\)</span>视为样本<span class="math inline">\(\boldsymbol{x}\)</span>属于正类的概率。用数学来表达就是<span class="math inline">\(f(\boldsymbol{x}) = P(y=1|\boldsymbol{x})\)</span>。</p>
+<p>这样我们就得到了随机变量<span class="math inline">\(y\in \{0, 1\}\)</span>关于<span class="math inline">\(\boldsymbol{x}\)</span>的以<span class="math inline">\(\boldsymbol{w}\)</span>和<span class="math inline">\(b\)</span>为参数的条件分布：</p>
+<p><span class="math display">\[
+p(y=1|\boldsymbol{x}) = \frac{e^{\boldsymbol{w}^T \boldsymbol{x}+b}}{1+e^{\boldsymbol{w}^T \boldsymbol{x}+b}}
+\]</span></p>
+<p><span class="math display">\[
+p(y=0|\boldsymbol{x}) = \frac{1}{1+e^{\boldsymbol{w}^T \boldsymbol{x}+b}}
+\]</span></p>
+<p>接下来用极大似然估计来估计参数<span class="math inline">\(\boldsymbol{w}\)</span>和<span class="math inline">\(b\)</span>（这里假设了样本独立同分布），其对数似然函数为 <span class="math display">\[
+l(\boldsymbol{w},b) = ln(p(\boldsymbol{y}|\mathbf{x})) = ln(\prod_{i=1}^m p(y_i|\boldsymbol{x}_i;\boldsymbol{w},b)) = \sum_{i=1}^m ln(p(y_i|\boldsymbol{x}_i;\boldsymbol{w},b))
+\]</span></p>
+<p>然后调整一下记号，并简化一下对数似然函数。</p>
+<p>令<span class="math inline">\(\boldsymbol{\beta} = (\boldsymbol{w};b)\)</span>，<span class="math inline">\(\hat{\boldsymbol{x}} = (\boldsymbol{x};1)\)</span>，则有<span class="math inline">\(\boldsymbol{w}^T\boldsymbol{x}+b=\boldsymbol{\beta}^T\boldsymbol{x}\)</span>。再记<span class="math inline">\(p_1(\hat{\boldsymbol{x}};\boldsymbol{\beta}) = p(y=1|\hat{\boldsymbol{x}},\boldsymbol{\beta})\)</span> ，<span class="math inline">\(p_0(\hat{\boldsymbol{x}};\boldsymbol{\beta}) = p(y=0|\hat{\boldsymbol{x}},\boldsymbol{\beta})\)</span></p>
+<p>注意到<span class="math inline">\(y\in \{0,1\}\)</span>，则对数似然函数可简化为： <span class="math display">\[
+l(\boldsymbol{w},b) = 
+\sum_{i=1}^m
+ln((y_i p_1(\hat{\boldsymbol{x}};\boldsymbol{\beta})) + (1-y_i)p_0(\hat{\boldsymbol{x}};\boldsymbol{\beta}))
+\]</span></p>
+<p>最大化对数似然函数可等价于最小化其相反数，将<span class="math inline">\(y\)</span>的条件带入后可得到如下优化问题： <span class="math display">\[
+(w^*, \boldsymbol{\beta}^*) =  
+\arg \min_{w,\boldsymbol{\beta}}  \sum_{i=1}^m(-y_i\boldsymbol{\beta}^T\hat{\boldsymbol{x}_i}+ln(1+e^{\boldsymbol{\beta}^T\boldsymbol{\hat{x}_i}}))
+\]</span></p>
+<ul>
+<li>可以证明<span class="math inline">\(l(w, \boldsymbol{\beta})\)</span>是凸函数，可以使用数值优化算法如牛顿法、梯度下降法等求得最优解。</li>
+</ul>
+<h2 id="logistic-regression的损失函数交叉熵">Logistic Regression的损失函数——交叉熵</h2>
+<p>对数似然函数<span class="math inline">\(l(\boldsymbol{w},b)\)</span>还有另外一种化简的方法： <span class="math display">\[
+l(\boldsymbol{w},b) = \sum_{i=1}^m ln(p_1(\hat{\boldsymbol{x}};\boldsymbol{\beta})^{y_i}p_0(\hat{\boldsymbol{x}};\boldsymbol{\beta})^{(1-y_i)})
+= \sum_{i=1}^m y_iln(p_1(\hat{\boldsymbol{x}};\boldsymbol{\beta}))+(1-y_i)ln(p_0(\hat{\boldsymbol{x}};\boldsymbol{\beta}))
+\]</span> 用这种化简方法同样可以推导出上面的最小化问题。可以看到，Logistic Regression采用的损失函数是交叉熵（cross entropy） <span class="math display">\[
+Cost(f(\boldsymbol{x}), y) = -yln(f(\boldsymbol{x})) - (1-y)ln(1-f(\boldsymbol{x}))
+\]</span> 代价函数<span class="math inline">\(J\)</span>为对数似然函数的相反数<span class="math inline">\(-l(\boldsymbol{w},b)\)</span>： <span class="math display">\[
+J = \sum_{i=1}^m Cost(f(\boldsymbol{x_i}), y_i) 
+= \sum_{i=1}^m (-y_iln(f(\boldsymbol{x_i})) - (1-y_i)ln(1-f(\boldsymbol{x_i})))
+= -l(\boldsymbol{w},b)
+\]</span> 研究交叉熵损失<span class="math inline">\(Cost(f(\boldsymbol{x}), y)\)</span>关于<span class="math inline">\(f(\boldsymbol{x})\)</span>在一维情形<span class="math inline">\(x\in \mathbb{R}\)</span>的图像容易发现，它的性质是：</p>
+<ol type="1">
+<li>当<span class="math inline">\(y=1\)</span>时，如果<span class="math inline">\(f(x)=1\)</span>，则<span class="math inline">\(Cost=0\)</span>；如果<span class="math inline">\(f(x)=0\)</span>，则<span class="math inline">\(Cost=+\infin\)</span></li>
+<li>当<span class="math inline">\(y=0\)</span>时，如果<span class="math inline">\(f(x)=0\)</span>，则<span class="math inline">\(Cost=0\)</span>；如果<span class="math inline">\(f(x)=1\)</span>，则<span class="math inline">\(Cost=+\infin\)</span></li>
+</ol>
+<p>所以交叉熵损失有这样的特点：分类错误的代价为无穷大，分类正确的代价为0.</p>
+<h2 id="决策边界">决策边界</h2>
+<p>因为我们把Logistic Regression分类器的输出视作属于正类的概率，在类别均衡情况下，分类器的输出大于0.5时将其预测为正类，反之将其预测为反类。</p>
+<p>观察<span class="math inline">\(f(\boldsymbol{x}) = \frac{1}{1 + e^{-( \boldsymbol{w}^T \boldsymbol{x} + b ) }}\)</span>的特点：当<span class="math inline">\(\boldsymbol{w}^T\boldsymbol{x} + b \ge 0\)</span>时，有<span class="math inline">\(f(\boldsymbol{x}) \ge 0.5\)</span>；当<span class="math inline">\(\boldsymbol{w}^T\boldsymbol{x} + b &lt; 0\)</span>时，有<span class="math inline">\(f(\boldsymbol{x}) &lt; 0.5\)</span>。</p>
+<p>而<span class="math inline">\(\boldsymbol{w}^T\boldsymbol{x} + b = 0\)</span>定义了样本空间<span class="math inline">\(\mathbb{R}^n\)</span>中的一个超平面，这个超平面被称为决策边界（decision boundary）。在样本空间上得到了Logistic Regression的一种解释：</p>
+<ul>
+<li><p>Logistic Regression实际上是在用一个超平面来划分样本空间，从而分出正反类。</p></li>
+<li><p>如果希望使用非线性的决策边界，可以把<span class="math inline">\(\boldsymbol{w}^T\boldsymbol{x} + b\)</span>换为高阶的多项式再进行Logistic Regression。</p></li>
+</ul>
+]]></content>
+      <categories>
+        <category>计算机科学</category>
+      </categories>
+      <tags>
+        <tag>机器学习</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>记PAT一道找规律题</title>
+    <url>/2019/07/28/%E6%89%BE%E8%A7%84%E5%BE%8B/</url>
+    <content><![CDATA[<p>刷PAT准备机试的时候碰到的一道题，只用到一点排列组合的知识。</p>
+<a id="more"></a>
+<h1 id="pat_a1104">PAT_A1104</h1>
+<p>给定一个有限项的实数列<span class="math inline">\(A=\{a_1,a_2,...,a_n\}\)</span>，设<span class="math inline">\(B=\{a_{k_1},a_{k_2},...a_{k_m}\}\)</span>，其中<span class="math inline">\(m\le n\)</span>。若<span class="math inline">\(k_1,...,k_m\)</span>为<span class="math inline">\(m\)</span>个相邻的整数，则称<span class="math inline">\(B\)</span>是<span class="math inline">\(A\)</span>的一个片段。一个数列中所有元素之和称为该数列的元素和。</p>
+<p>证明：<span class="math inline">\(A\)</span>的所有片段的元素和的总和为 <span class="math display">\[\sum_{i=1}^n ia_i(n+1-i)\]</span></p>
+<p>证明：考虑出现元素<span class="math inline">\(a_i\)</span>的片段的数量。在<span class="math inline">\(a_1\)</span>到<span class="math inline">\(a_i\)</span>共<span class="math inline">\(i\)</span>个元素中选一个作为片段的头，在<span class="math inline">\(a_i\)</span>到<span class="math inline">\(a_n\)</span>共<span class="math inline">\(n-i+1\)</span>个元素中选一个作为片段的尾，这样的片段包含<span class="math inline">\(a_i\)</span>，根据乘法原理，一共有<span class="math inline">\(i*(n-i+1)\)</span>个。所以元素<span class="math inline">\(a_i\)</span>出现<span class="math inline">\(i*(n-i+1)\)</span>次，求和即可。</p>
+]]></content>
+      <categories>
+        <category>计算机科学</category>
+      </categories>
+      <tags>
+        <tag>排列与组合</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>教科书般的亵渎</title>
+    <url>/2020/02/05/%E6%95%99%E7%A7%91%E4%B9%A6%E8%88%AC%E7%9A%84%E4%BA%B5%E6%B8%8E/</url>
+    <content><![CDATA[<h1 id="教科书般的亵渎">教科书般的亵渎</h1>
+<h2 id="背景介绍">背景介绍</h2>
+<p>炉石传说里术士有一张非常强力的AOE卡牌“亵渎”</p>
+<p><img src="/images/xiedu.jpg" align=center /></p>
+<p>这张牌的效果是：对所有随从造成1点伤害，如果有随从死亡，则再次施放该法术。</p>
+<p>在经过仔细地计算之后，即使是非常复杂的场面，也可能通过随从相互进行攻击，构造血量的等差数列，然后使用2费的亵渎达到清场。但在一个回合有限的思考时间里，这“高等术学”并不是那么容易计算出来的。</p>
+<a id="more"></a>
+<h2 id="亵渎计算器">亵渎计算器</h2>
+<p>在编写亵渎计算器之前，先把这个问题描述清楚：</p>
+<blockquote>
+<p>输入：给定敌方和我方不多于7个随从的攻击力、生命值、是否具有嘲讽、我方该随从本回合是否能进行攻击（暂时不考虑亡语、圣盾、风怒、复生等复杂的效果）</p>
+<p>输出：所有全清场面的我方随从攻击方案</p>
+</blockquote>
+<p>下面用Python3.7来实现：</p>
+<p>先写一些测试用例和全局变量</p>
+<figure class="highlight python"><table><tr><td class="code"><pre><span class="line">a2 = [<span class="number">1</span>, <span class="number">2</span>, <span class="number">3</span>] <span class="comment"># 敌方随从攻击力</span></span><br><span class="line">h2 = [<span class="number">2</span>, <span class="number">4</span>, <span class="number">4</span>] <span class="comment"># 敌方随从生命值</span></span><br><span class="line">taunt = [<span class="number">0</span>, <span class="number">1</span>, <span class="number">0</span>] <span class="comment"># 敌方随从是否具有嘲讽</span></span><br><span class="line"></span><br><span class="line">a1 = [<span class="number">1</span>, <span class="number">1</span>] <span class="comment"># 我方随从攻击力</span></span><br><span class="line">h1 = [<span class="number">1</span>, <span class="number">2</span>] <span class="comment"># 我方随从生命值</span></span><br><span class="line"></span><br><span class="line">flag = <span class="literal">False</span> <span class="comment"># 是否有解</span></span><br><span class="line">attack_record = [] <span class="comment"># 用一个栈记录攻击</span></span><br><span class="line">H1 = h1[:]</span><br><span class="line">H2 = h2[:]</span><br><span class="line">num_of_solutions = <span class="number">0</span></span><br></pre></td></tr></table></figure>
+<p>然后写一个判断等差数列的函数，h1和h2是存储敌方和我方随从生命值的列表，判断是否构成等差数列</p>
+<figure class="highlight python"><table><tr><td class="code"><pre><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">is_AP</span>(<span class="params">h1, h2</span>):</span></span><br><span class="line">    maxH = <span class="built_in">max</span>(<span class="built_in">max</span>(h1), <span class="built_in">max</span>(h2))</span><br><span class="line">    <span class="keyword">for</span> i <span class="keyword">in</span> <span class="built_in">range</span>(<span class="number">1</span>, maxH):</span><br><span class="line">        <span class="keyword">if</span> i <span class="keyword">not</span> <span class="keyword">in</span> h1 <span class="keyword">and</span> i <span class="keyword">not</span> <span class="keyword">in</span> h2:</span><br><span class="line">            <span class="keyword">return</span> <span class="literal">False</span></span><br><span class="line">    <span class="keyword">return</span> <span class="literal">True</span></span><br></pre></td></tr></table></figure>
+<p>再写一个主函数，如果初始就构成了等差数列就直接输出，不进行DFS；如果不构成等差数列，则进行DFS</p>
+<figure class="highlight python"><table><tr><td class="code"><pre><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">main</span>():</span></span><br><span class="line">    num_of_taunt = <span class="built_in">sum</span>(taunt)</span><br><span class="line">    <span class="keyword">if</span> is_AP(H1, H2):</span><br><span class="line">        print(attack_record)</span><br><span class="line">        print(H2)</span><br><span class="line">        print(H1)</span><br><span class="line">        print(<span class="string">&quot;number of solutions: 1&quot;</span> )</span><br><span class="line">    <span class="keyword">else</span>:</span><br><span class="line">        DFS(<span class="number">0</span>, <span class="number">0</span>, num_of_taunt)</span><br><span class="line">        <span class="keyword">if</span> flag == <span class="literal">False</span>:</span><br><span class="line">            print(<span class="string">&quot;No Solution.&quot;</span>)</span><br><span class="line">        print(<span class="string">&quot;number of solutions: &quot;</span> + <span class="built_in">str</span>(num_of_solutions))</span><br></pre></td></tr></table></figure>
+<p>然后是DFS的实现：</p>
+<p>这里需要传入的参数有三个，k1和k2分别代表我方和敌方的随从序号，num_of_taunt是敌方场上嘲讽随从的数量（这个会影响是否能进行攻击所以要记录）</p>
+<p>分支分为两类：我方k1攻击敌方k2，我方k1不攻击敌方k2</p>
+<p>攻击分支：根据两个随从的生命值以及场上嘲讽的情况来进行剪枝</p>
+<p>不攻击分支：要根据是否还有下一个敌方随从来进行判断</p>
+<figure class="highlight python"><table><tr><td class="code"><pre><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">DFS</span>(<span class="params">k1, k2, num_of_taunt</span>):</span></span><br><span class="line">    <span class="comment"># 已经构成等差数列</span></span><br><span class="line">    <span class="keyword">if</span> is_AP(H1, H2):</span><br><span class="line">        <span class="keyword">global</span> flag</span><br><span class="line">        flag = <span class="literal">True</span> <span class="comment"># 有解</span></span><br><span class="line">        <span class="keyword">global</span> num_of_solutions</span><br><span class="line">        num_of_solutions = num_of_solutions + <span class="number">1</span></span><br><span class="line"></span><br><span class="line">        print(attack_record)</span><br><span class="line">        print(H2)</span><br><span class="line">        print(H1)</span><br><span class="line">        print(<span class="string">&#x27;\n&#x27;</span>)</span><br><span class="line"></span><br><span class="line">    <span class="comment"># 递归边界</span></span><br><span class="line">    <span class="keyword">if</span> k1 &gt;= <span class="built_in">len</span>(H1):</span><br><span class="line">        <span class="keyword">return</span></span><br><span class="line">    </span><br><span class="line">    <span class="comment"># k1撞k2</span></span><br><span class="line">    <span class="keyword">if</span> H1[k1] &gt;= <span class="number">0</span> <span class="keyword">and</span> H2[k2] &gt;= <span class="number">0</span>: <span class="comment"># 生命值不为负才能攻击</span></span><br><span class="line">        <span class="keyword">if</span> num_of_taunt == <span class="number">0</span> <span class="keyword">or</span> taunt[k2]: <span class="comment"># 没有嘲讽随从或k2是嘲讽随从</span></span><br><span class="line">            attack(k1, k2, num_of_taunt)</span><br><span class="line"></span><br><span class="line">    <span class="comment"># k1不撞k2</span></span><br><span class="line">    <span class="keyword">if</span> k2+<span class="number">1</span> &lt; <span class="built_in">len</span>(H2): <span class="comment"># 还有下一个敌方随从</span></span><br><span class="line">        DFS(k1, k2+<span class="number">1</span>, num_of_taunt)</span><br><span class="line">    <span class="keyword">elif</span> k1+<span class="number">1</span> &lt; <span class="built_in">len</span>(H1): <span class="comment"># 没有下一个敌方随从</span></span><br><span class="line">        DFS(k1+<span class="number">1</span>, <span class="number">0</span>, num_of_taunt)</span><br></pre></td></tr></table></figure>
+<p>最后是攻击分支的具体实现：需要判断攻击之后是否会对敌方嘲讽状况发生影响</p>
+<figure class="highlight python"><table><tr><td class="code"><pre><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">attack</span>(<span class="params">k1, k2, num_of_taunt</span>):</span></span><br><span class="line">    H1[k1] = H1[k1] - a2[k2]</span><br><span class="line">    H2[k2] = H2[k2] - a1[k1]</span><br><span class="line">    attack_record.append(<span class="built_in">str</span>(k1) + <span class="string">&quot; attack &quot;</span> + <span class="built_in">str</span>(k2))</span><br><span class="line">    <span class="keyword">if</span> taunt[k2] <span class="keyword">and</span> H2[k2] &lt;= <span class="number">0</span>:</span><br><span class="line">        DFS(k1+<span class="number">1</span>, <span class="number">0</span>, num_of_taunt - <span class="number">1</span>)</span><br><span class="line">    <span class="keyword">else</span>:</span><br><span class="line">        DFS(k1+<span class="number">1</span>, <span class="number">0</span>, num_of_taunt)</span><br><span class="line">    attack_record.pop(<span class="number">-1</span>)</span><br><span class="line">    H1[k1] = H1[k1] + a2[k2]</span><br><span class="line">    H2[k2] = H2[k2] + a1[k1]</span><br></pre></td></tr></table></figure>
+<p>程序输出如下：</p>
+<figure class="highlight python"><table><tr><td class="code"><pre><span class="line">[<span class="string">&#x27;1 attack 1&#x27;</span>]</span><br><span class="line">[<span class="number">2</span>, <span class="number">3</span>, <span class="number">4</span>]</span><br><span class="line">[<span class="number">1</span>, <span class="number">0</span>]</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">number of solutions: <span class="number">1</span></span><br></pre></td></tr></table></figure>
+<p>敌方1号随从嘲讽，容易验证的确只有这一个解：我方1号随从攻击敌方1号随从，然后使用亵渎全解</p>
+<p>第二、三行输出显示亵渎前敌方和我方随从剩余生命值，的确构成等差数列</p>
+]]></content>
+      <categories>
+        <category>计算机科学</category>
+      </categories>
+      <tags>
+        <tag>算法</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>解决Hexo和Mathjax的冲突</title>
+    <url>/2019/04/22/%E8%A7%A3%E5%86%B3Hexo%E5%92%8CMathjax%E7%9A%84%E5%86%B2%E7%AA%81/</url>
+    <content><![CDATA[<h1 id="问题">问题</h1>
+<p>当我们使用Markdown写文档需要输入数学公式的时候，通常使用Latex去书写数学公式，但Markdown的一些符号和Latex的一些符号是冲突的，例如下划线<code>_</code>在Latex中是下标的意思，在Markdown中是<code>&lt;em&gt;</code>标签的意思。</p>
+<p>Hexo默认使用<code>marked.js</code>去解析我们写的markdown，碰到Latex公式中和Markdown冲突的符号的时候，比如下划线<code>_</code>，这个辣鸡<code>marked.js</code>就自动处理成<code>&lt;em&gt;</code>，于是Mathjax识别Latex公式的时候就会渲染成奇怪的东西。</p>
+<blockquote><p>数学公式渲染问题的解决方法已经在NexT官方文档里给出了详细的说明和建议</p>
+<footer><strong>NexT-Docs</strong><cite><a href="https://theme-next.js.org/docs/third-party-services/math-equations.html">Third Party Services - Math Equation - Render Engines</a></cite></footer></blockquote>
+<a id="more"></a>
+<h1 id="解决方法">解决方法</h1>
+<p>网上找了好多个解决办法，都各有缺陷，就不一一列举了。目前比较好的解决方案是更换渲染引擎。将hexo默认的渲染器引擎<code>marked.js</code>卸载掉，然后更换成<code>hexo-renderer-pandoc</code>。大体上解决了符号冲突的问题，唯有一点点缺陷是Pandoc要求的Markdown语法和一般语法稍有不同。</p>
+<h2 id="更换引擎">更换引擎</h2>
+<p>在百度查到的教程里基本上都是建议使用<code>hexo-renderer-kramed</code></p>
+<p>但是呢，按照百度到的方法更换了这个引擎之后，虽然能渲染数学公式了，但是在有序列表里插入Latex公式还是发现序号没了。后来又查了不少博客，发现原来这个<code>hexo-renderer-kramed</code>只是修改了一部分bug<del>(那你特么发布出来坑我们做甚)</del></p>
+<p>最后终于在一个不起眼的角落找到了一篇博文，建议使用<code>hexo-renderer-pandoc</code>，抱着试试看死马当活马医的心态按着教程来了一遍：</p>
+<ol type="1">
+<li><p>首先安装Pandoc，官网是<a href="https://www.pandoc.org">https://www.pandoc.org</a></p></li>
+<li><p>卸载hexo默认的<code>marked.js</code>，再安装<code>hexo-renderer-pandoc</code></p>
+<pre><code> npm uninstall hexo-renderer-marked --save
+ npm install hexo-renderer-pandoc --save</code></pre></li>
+<li><p>注意Pandoc要求的Markdown语法和一般的Markdown语法有些区别，但是常用的几乎一样，碰到问题的时候再查官方文档就行</p></li>
+</ol>
+<h1 id="细数容易进的坑">细数容易进的坑</h1>
+<p>官网上给了设置<code>hexo-renderer-pandoc</code>的一些方法，如果不需要其他功能可以不按照官网设置。</p>
+<p>但如果按着上面设置，要注意官网给的修改后的代码有些地方行末多了分号(不注意看简直坑死人，写那份文档的人用点心好吗)</p>
+<h1 id="参考资料">参考资料</h1>
+<blockquote>
+<p><a href="https://segmentfault.com/a/1190000007261752">Hexo下mathjax的转义问题</a></p>
+</blockquote>
+<blockquote>
+<p><a href="https://www.lizhechen.com/2017/03/08/Hexo%E4%B8%8EMathjax%E7%9A%84%E5%86%B2%E7%AA%81%E5%8F%8A%EF%BC%88%E9%83%A8%E5%88%86%EF%BC%89%E8%A7%A3%E5%86%B3/">调教Hexo[2]——Hexo与Mathjax的冲突及解决方案</a></p>
+</blockquote>
+]]></content>
+      <categories>
+        <category>日常debug</category>
+      </categories>
+      <tags>
+        <tag>Hexo</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>除留余数法</title>
+    <url>/2019/07/28/%E9%99%A4%E7%95%99%E4%BD%99%E6%95%B0%E6%B3%95/</url>
+    <content><![CDATA[<p>除留余数法是哈希表中常用的哈希函数，假设哈希表的大小为<span class="math inline">\(m\)</span>，则除留余数法的哈希函数的一般形式为：</p>
+<p><span class="math display">\[ hash(key) = key \% p \]</span></p>
+<p>其中<span class="math inline">\(p\)</span>是不大于<span class="math inline">\(m\)</span>且最接近<span class="math inline">\(m\)</span>的素数。</p>
+<blockquote>
+<p>参考文献：《数据结构——用面向对象方法与C++语言描述》第2版</p>
+</blockquote>
+<p>现在问题来了：<span class="math inline">\(p\)</span>的选取为什么非得是素数呢？</p>
+<a id="more"></a>
+<h1 id="哈希函数的构造要点">哈希函数的构造要点</h1>
+<ol type="1">
+<li>哈希函数的定义域要包括所有关键码key</li>
+<li>如果哈希表的大小为<span class="math inline">\(m\)</span>，则哈希函数的值域必须是<span class="math inline">\(0\)</span>到<span class="math inline">\(m-1\)</span></li>
+<li>哈希函数的取值应当尽量分布均匀以减少冲突</li>
+<li>哈希函数的计算应当足够简单</li>
+</ol>
+<p>从需求来看，1和2是对哈希函数定义域和值域的要求，3是要求冲突尽可能低，4是要求计算量低。</p>
+<ul>
+<li>很显然1是容易满足的，因为取模函数的定义域是全体整数</li>
+<li>为了满足2，<span class="math inline">\(p\)</span>只需取一个小于等于<span class="math inline">\(m\)</span>的数即可</li>
+<li>4也是容易满足的，因为取模运算足够简单</li>
+</ul>
+<p>下面详细讨论3：</p>
+<p>3的需求用数学语言可以表述为：设<span class="math inline">\(key\)</span>是一个整数随机变量，则<span class="math inline">\(hash(key)\)</span>是一个取值为<span class="math inline">\(0\)</span>到<span class="math inline">\(m-1\)</span>的整数随机变量，希望取适当的<span class="math inline">\(p\)</span>使得<span class="math inline">\(hash(key)\)</span>的每个取值都为<span class="math inline">\(\frac{1}{p}\)</span>。很显然<span class="math inline">\(key\)</span>服从何种概率分布是至关重要的，实际上已知<span class="math inline">\(key\)</span>分布列情况下求出<span class="math inline">\(p\)</span>的最优取值还是有办法的。</p>
+<h1 id="求解最优的p">求解最优的<span class="math inline">\(p\)</span></h1>
+<blockquote>
+<p>假设<span class="math inline">\(key\)</span>的分布列为<span class="math inline">\(P\{key = i\} = p_i\)</span>。只需要用到一点离散概率知识，求出<span class="math inline">\(hash(key)\)</span>的分布列，为了记号简单我就直接写成<span class="math inline">\(P\{hash(key) = i\} = q_i(p)\)</span>好了。参数<span class="math inline">\(p\)</span>的最优性可以定义为使<span class="math inline">\(hash(key)\)</span>取每个值的概率与<span class="math inline">\(\frac{1}{p}\)</span>的平方误差最小，即 <span class="math display">\[ p = \arg\min \sum_i (q_i(p) - \frac{1}{p})^2\]</span> 然后求解这个优化问题即可。这里<span class="math inline">\(q_i(p)\)</span>表示<span class="math inline">\(q_i\)</span>依赖于<span class="math inline">\(p\)</span>。忽略求解过程。</p>
+</blockquote>
+<p>稍微偏题了一下给出了一种数学建模的解法，上面这个方法说复杂也不复杂，但是求解那个优化问题可能还是没那么简单的。如果先承认<span class="math inline">\(p\)</span>取素数比取合数好的话，那么用脚趾头想也知道选最接近<span class="math inline">\(m\)</span>又不超过<span class="math inline">\(m\)</span>的素数作为<span class="math inline">\(p\)</span>是非常好的选择，而且也绕开了上面求解优化问题的繁琐。下面回归正题，解释为什么<span class="math inline">\(p\)</span>要选素数。</p>
+<h1 id="哈希函数中p取素数的原因">哈希函数中<span class="math inline">\(p\)</span>取素数的原因</h1>
+<p>如前所述，需求3与<span class="math inline">\(key\)</span>所服从的分布有密切关系。如果<span class="math inline">\(key\)</span>服从均匀分布的话，那么取<span class="math inline">\(p=m\)</span>这个问题就解决了。</p>
+<p>对于不服从均匀分布的时候，先看这样一种情况：</p>
+<blockquote>
+<p>例：<span class="math inline">\(key\)</span>的取值范围<span class="math inline">\(A=\{0,6,12,18,24,30,36,...\}\)</span>，如果<span class="math inline">\(m=10\)</span>，直接取<span class="math inline">\(p=10\)</span>，很容易发现<span class="math inline">\(hash(key)\in \{0,6,2,8,4\}\)</span>。出现的问题有两个，哈希表的空间浪费了，冲突现象变多了。</p>
+</blockquote>
+<p>网上有很多靠谱的解释，这里感谢由知乎用户Porzy给出的一个比较简洁的解释(<a href="https://www.zhihu.com/question/20806796">原文链接</a>)</p>
+<p>因为<span class="math inline">\(hash(key)=key\%p\)</span>，不妨设<span class="math inline">\(key = a*p+hash(key)\)</span>，则<span class="math inline">\(hash(key)=key-a*p\)</span>。</p>
+<p>于是有</p>
+<p><span class="math display">\[hash(key)=gcd(key,p)*(\frac{key}{gcd(key,p)}-\frac{a*p}{gcd(key,p)})\]</span></p>
+<p>这个等式表明<span class="math inline">\(hash(key)\)</span>的取值只能是<span class="math inline">\(gcd(key,p)\)</span>的倍数，对于上面的例子，A中的元素都是6的倍数，6和10的最大公约数为2，因此A中的元素只能被映射成0,2,4,6,8。</p>
+<p>将<span class="math inline">\(p\)</span>取成素数的好处就在于<span class="math inline">\(gcd(key,p)=1\)</span>，保证了上述这种极端情况下哈希值不会只取到部分值导致冲突现象变多。</p>
+<h1 id="其他">其他</h1>
+<p>其实将<span class="math inline">\(p\)</span>取成素数并不是最优的选择，仅仅是杜绝了上述的极端现象，在查阅资料的时候也有看到说<span class="math inline">\(p\)</span>的选取准则并不是只有取素数。</p>
+<ul>
+<li>这个网站给出了一些好的哈希参数<a href="https://planetmath.org/goodhashtableprimes">good hashing configuration</a></li>
+</ul>
+]]></content>
+      <categories>
+        <category>计算机科学</category>
+      </categories>
+      <tags>
+        <tag>数据结构</tag>
+        <tag>除留余数法</tag>
+        <tag>数论</tag>
+      </tags>
+  </entry>
+</search>
