@@ -1,0 +1,793 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 5.2.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+  <link rel="manifest" href="/images/manifest.json">
+  <meta name="msapplication-config" content="/images/browserconfig.xml">
+
+<link rel="stylesheet" href="/css/main.css">
+
+<link rel="stylesheet" href="//fonts.googleapis.com/css?family=Lato:300,300italic,400,400italic,700,700italic|Hiragino+Sans+GB:300,300italic,400,400italic,700,700italic&display=swap&subset=latin,latin-ext">
+
+<link rel="stylesheet" href="//cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@5.15.0/css/all.min.css">
+  <link rel="stylesheet" href="//cdn.jsdelivr.net/npm/animate.css@3.1.1/animate.min.css">
+  <link rel="stylesheet" href="//cdn.jsdelivr.net/npm/@fancyapps/fancybox@3.5.7/dist/jquery.fancybox.min.css">
+  <link rel="stylesheet" href="//cdn.jsdelivr.net/npm/nprogress@0.2.0/nprogress.css">
+  <script src="//cdn.jsdelivr.net/npm/nprogress@0.2.0/nprogress.js"></script>
+
+<script class="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"piggerzzm.github.io","root":"/","scheme":"Gemini","version":"8.0.1","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"width":240},"copycode":true,"bookmark":{"enable":true,"color":"#222","save":"auto"},"fancybox":true,"mediumzoom":false,"lazyload":false,"pangu":true,"comments":{"style":"tabs","active":"valine","storage":true,"lazyload":false,"nav":null,"activeClass":"valine"},"motion":{"enable":true,"async":false,"transition":{"post_block":"bounceIn","post_header":"fadeInDown","post_body":"fadeInDown","coll_header":"fadeInLeft","sidebar":"fadeInUp"}},"prism":false,"i18n":{"placeholder":"搜索...","empty":"没有找到任何搜索结果：${query}","hits_time":"找到 ${hits} 个搜索结果（用时 ${time} 毫秒）","hits":"找到 ${hits} 个搜索结果"},"path":"search.xml","localsearch":{"enable":true,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false}};
+  </script>
+
+  <meta name="description" content="EM算法和高斯混合模型 《统计学习方法》对EM算法和HMM的介绍都比较详细，但有不少地方绕弯路，而且记号稍显混乱；《西瓜书》对EM算法和HMM的介绍都非常简洁，有许多细节被略去；B站上的白板推导系列里也有EM算法和HMM详细推导。 为了这次数据挖掘小组作业，在这里整理一下EM和HMM">
+<meta property="og:type" content="article">
+<meta property="og:title" content="EM算法和高斯混合模型">
+<meta property="og:url" content="https://piggerzzm.github.io/2020/11/09/EM/index.html">
+<meta property="og:site_name" content="Safe House">
+<meta property="og:description" content="EM算法和高斯混合模型 《统计学习方法》对EM算法和HMM的介绍都比较详细，但有不少地方绕弯路，而且记号稍显混乱；《西瓜书》对EM算法和HMM的介绍都非常简洁，有许多细节被略去；B站上的白板推导系列里也有EM算法和HMM详细推导。 为了这次数据挖掘小组作业，在这里整理一下EM和HMM">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://i.loli.net/2020/11/10/Fcy3MZePr4wB6za.png">
+<meta property="article:published_time" content="2020-11-09T04:16:41.000Z">
+<meta property="article:modified_time" content="2020-11-09T04:16:41.000Z">
+<meta property="article:author" content="ZZM">
+<meta property="article:tag" content="机器学习">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://i.loli.net/2020/11/10/Fcy3MZePr4wB6za.png">
+
+
+<link rel="canonical" href="https://piggerzzm.github.io/2020/11/09/EM/">
+
+
+<script class="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>EM算法和高斯混合模型 | Safe House</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  body { margin-top: 2rem; }
+
+  .use-motion .menu-item,
+  .use-motion .sidebar,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header {
+    visibility: visible;
+  }
+
+  .use-motion .header,
+  .use-motion .site-brand-container .toggle,
+  .use-motion .footer { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle,
+  .use-motion .custom-logo-image {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line {
+    transform: scaleX(1);
+  }
+
+  .search-pop-overlay, .sidebar-nav { display: none; }
+  .sidebar-panel { display: block; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage" class="use-motion">
+  <div class="headband"></div>
+
+  <main class="main">
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <i class="logo-line"></i>
+      <h1 class="site-title">Safe House</h1>
+      <i class="logo-line"></i>
+    </a>
+      <p class="site-subtitle" itemprop="description">ZZM's blog</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+        <i class="fa fa-search fa-fw fa-lg"></i>
+    </div>
+  </div>
+</div>
+
+
+
+<nav class="site-nav">
+  <ul class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-about">
+
+    <a href="/about/" rel="section"><i class="fa fa-user fa-fw"></i>关于</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a>
+
+  </li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>搜索
+        </a>
+      </li>
+  </ul>
+</nav>
+
+
+
+  <div class="search-pop-overlay">
+    <div class="popup search-popup">
+        <div class="search-header">
+  <span class="search-icon">
+    <i class="fa fa-search"></i>
+  </span>
+  <div class="search-input-container">
+    <input autocomplete="off" autocapitalize="off" maxlength="80"
+           placeholder="搜索..." spellcheck="false"
+           type="search" class="search-input">
+  </div>
+  <span class="popup-btn-close">
+    <i class="fa fa-times-circle"></i>
+  </span>
+</div>
+<div class="search-result-container no-result">
+  <div class="search-result-icon">
+    <i class="fa fa-spinner fa-pulse fa-5x"></i>
+  </div>
+</div>
+
+    </div>
+  </div>
+
+</div>
+        
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+  </div>
+
+  <aside class="sidebar">
+
+    <div class="sidebar-inner sidebar-nav-active sidebar-toc-active">
+      <ul class="sidebar-nav">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <section class="post-toc-wrap sidebar-panel">
+          <div class="post-toc animated"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#em%E7%AE%97%E6%B3%95%E5%92%8C%E9%AB%98%E6%96%AF%E6%B7%B7%E5%90%88%E6%A8%A1%E5%9E%8B"><span class="nav-number">1.</span> <span class="nav-text">EM算法和高斯混合模型</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#em%E7%AE%97%E6%B3%95"><span class="nav-number">1.1.</span> <span class="nav-text">EM算法</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%9E%81%E5%A4%A7%E4%BC%BC%E7%84%B6%E4%BC%B0%E8%AE%A1"><span class="nav-number">1.1.1.</span> <span class="nav-text">极大似然估计</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%AF%B9%E6%95%B0%E4%BC%BC%E7%84%B6%E5%87%BD%E6%95%B0%E7%9A%84%E4%B8%8B%E7%95%8C"><span class="nav-number">1.1.2.</span> <span class="nav-text">对数似然函数的下界</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#em%E7%AE%97%E6%B3%95%E7%9A%84%E5%AF%BC%E5%87%BA"><span class="nav-number">1.1.3.</span> <span class="nav-text">EM算法的导出</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#em%E7%AE%97%E6%B3%95%E7%9A%84%E6%94%B6%E6%95%9B%E6%80%A7"><span class="nav-number">1.1.4.</span> <span class="nav-text">EM算法的收敛性</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E9%AB%98%E6%96%AF%E6%B7%B7%E5%90%88%E6%A8%A1%E5%9E%8Bgmm"><span class="nav-number">1.2.</span> <span class="nav-text">高斯混合模型（GMM）</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E7%94%A8%E9%AB%98%E6%96%AF%E5%88%86%E5%B8%83%E5%AF%B9%E6%95%B0%E6%8D%AE%E9%9B%86%E5%BB%BA%E6%A8%A1"><span class="nav-number">1.2.1.</span> <span class="nav-text">用高斯分布对数据集建模</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E7%94%A8em%E7%AE%97%E6%B3%95%E8%BF%9B%E8%A1%8C%E5%8F%82%E6%95%B0%E4%BC%B0%E8%AE%A1"><span class="nav-number">1.2.2.</span> <span class="nav-text">用EM算法进行参数估计</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#e-step"><span class="nav-number">1.2.3.</span> <span class="nav-text">E-Step</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#m-step"><span class="nav-number">1.2.4.</span> <span class="nav-text">M-Step</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%8F%82%E8%80%83%E6%96%87%E7%8C%AE"><span class="nav-number">1.3.</span> <span class="nav-text">参考文献</span></a></li></ol></li></ol></div>
+      </section>
+      <!--/noindex-->
+
+      <section class="site-overview-wrap sidebar-panel">
+        <div class="site-author site-overview-item animated" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="ZZM"
+      src="/images/ZZM.jpg">
+  <p class="site-author-name" itemprop="name">ZZM</p>
+  <div class="site-description" itemprop="description">CS graduate student in BNU</div>
+</div>
+<div class="site-state-wrap site-overview-item animated">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">15</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">5</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">15</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author site-overview-item animated">
+      <span class="links-of-author-item">
+        <a href="https://github.com/PiggerZZM" title="GitHub → https:&#x2F;&#x2F;github.com&#x2F;PiggerZZM" rel="noopener" target="_blank"><i class="fab fa-github fa-fw"></i>GitHub</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="/442823793@qq.com" title="E-Mail → 442823793@qq.com"><i class="fa fa-envelope fa-fw"></i>E-Mail</a>
+      </span>
+  </div>
+  <div class="cc-license site-overview-item animated" itemprop="license">
+    <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/deed.zh" class="cc-opacity" rel="noopener" target="_blank"><img src="/images/cc-by-nc-sa.svg" alt="Creative Commons"></a>
+  </div>
+
+
+
+      </section>
+        <div class="back-to-top animated">
+          <i class="fa fa-arrow-up"></i>
+          <span>0%</span>
+        </div>
+    </div>
+  </aside>
+  <div class="sidebar-dimmer"></div>
+
+
+    </header>
+
+    
+  <div class="reading-progress-bar"></div>
+  <a role="button" class="book-mark-link book-mark-link-fixed"></a>
+
+  <a href="https://github.com/PiggerZZM" class="github-corner" title="Follow me on GitHub" aria-label="Follow me on GitHub" rel="noopener" target="_blank"><svg width="80" height="80" viewBox="0 0 250 250" aria-hidden="true"><path d="M0,0 L115,115 L130,115 L142,142 L250,250 L250,0 Z"></path><path d="M128.3,109.0 C113.8,99.7 119.0,89.6 119.0,89.6 C122.0,82.7 120.5,78.6 120.5,78.6 C119.2,72.0 123.4,76.3 123.4,76.3 C127.3,80.9 125.5,87.3 125.5,87.3 C122.9,97.6 130.6,101.9 134.4,103.2" fill="currentColor" style="transform-origin: 130px 106px;" class="octo-arm"></path><path d="M115.0,115.0 C114.9,115.1 118.7,116.5 119.8,115.4 L133.7,101.6 C136.9,99.2 139.9,98.4 142.2,98.6 C133.8,88.0 127.5,74.4 143.8,58.0 C148.5,53.4 154.0,51.2 159.7,51.0 C160.3,49.4 163.2,43.6 171.4,40.1 C171.4,40.1 176.1,42.5 178.8,56.2 C183.1,58.6 187.2,61.8 190.9,65.4 C194.5,69.0 197.7,73.2 200.1,77.6 C213.8,80.2 216.3,84.9 216.3,84.9 C212.7,93.1 206.9,96.0 205.4,96.6 C205.1,102.4 203.0,107.8 198.3,112.5 C181.9,128.9 168.3,122.5 157.7,114.1 C157.9,116.9 156.7,120.9 152.7,124.9 L141.0,136.5 C139.8,137.7 141.6,141.9 141.8,141.8 Z" fill="currentColor" class="octo-body"></path></svg></a>
+
+<noscript>
+  <div class="noscript-warning">Theme NexT works best with JavaScript enabled</div>
+</noscript>
+
+
+    <div class="main-inner post posts-expand">
+      
+
+      
+
+  
+
+
+<div class="post-block">
+  
+  
+
+  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://piggerzzm.github.io/2020/11/09/EM/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/ZZM.jpg">
+      <meta itemprop="name" content="ZZM">
+      <meta itemprop="description" content="CS graduate student in BNU">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Safe House">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          EM算法和高斯混合模型
+        </h1>
+
+        <div class="post-meta-container">
+          <div class="post-meta">
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar"></i>
+      </span>
+      <span class="post-meta-item-text">发表于</span>
+
+      <time title="创建时间：2020-11-09 12:16:41" itemprop="dateCreated datePublished" datetime="2020-11-09T12:16:41+08:00">2020-11-09</time>
+    </span>
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-folder"></i>
+      </span>
+      <span class="post-meta-item-text">分类于</span>
+        <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+          <a href="/categories/%E8%AE%A1%E7%AE%97%E6%9C%BA%E7%A7%91%E5%AD%A6/" itemprop="url" rel="index"><span itemprop="name">计算机科学</span></a>
+        </span>
+    </span>
+
+  
+    <span id="/2020/11/09/EM/" class="post-meta-item leancloud_visitors" data-flag-title="EM算法和高斯混合模型" title="阅读次数">
+      <span class="post-meta-item-icon">
+        <i class="far fa-eye"></i>
+      </span>
+      <span class="post-meta-item-text">阅读次数：</span>
+      <span class="leancloud-visitors-count"></span>
+    </span>
+  
+  <span class="post-meta-item">
+    
+      <span class="post-meta-item-icon">
+        <i class="far fa-comment"></i>
+      </span>
+      <span class="post-meta-item-text">Valine：</span>
+    
+    <a title="valine" href="/2020/11/09/EM/#valine-comments" itemprop="discussionUrl">
+      <span class="post-comments-count valine-comment-count" data-xid="/2020/11/09/EM/" itemprop="commentCount"></span>
+    </a>
+  </span>
+  
+  
+      </div>
+      <div class="post-meta">
+    <span class="post-meta-item" title="本文字数">
+      <span class="post-meta-item-icon">
+        <i class="far fa-file-word"></i>
+      </span>
+      <span class="post-meta-item-text">本文字数：</span>
+      <span>9.7k</span>
+    </span>
+    <span class="post-meta-item" title="阅读时长">
+      <span class="post-meta-item-icon">
+        <i class="far fa-clock"></i>
+      </span>
+      <span class="post-meta-item-text">阅读时长 &asymp;</span>
+      <span>9 分钟</span>
+    </span>
+</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+        <h1 id="em算法和高斯混合模型">EM算法和高斯混合模型</h1>
+<p>《统计学习方法》对EM算法和HMM的介绍都比较详细，但有不少地方绕弯路，而且记号稍显混乱；《西瓜书》对EM算法和HMM的介绍都非常简洁，有许多细节被略去；B站上的白板推导系列里也有EM算法和HMM详细推导。</p>
+<p>为了这次数据挖掘小组作业，在这里整理一下EM和HMM</p>
+<a id="more"></a>
+<h2 id="em算法">EM算法</h2>
+<p>EM算法是解决含有隐变量情况下的极大似然估计算法</p>
+<h3 id="极大似然估计">极大似然估计</h3>
+<p>已知数据集<span class="math inline">\(\mathbf{x} = (x_1,...,x_n)\)</span>，先验分布为<span class="math inline">\(p(x;\Theta)\)</span>。在有独立同分布的假设下容易写出联合概率分布<span class="math inline">\(p(\mathbf{x};\Theta)\)</span>，对参数<span class="math inline">\(\Theta\)</span>的极大似然估计化归为求解如下问题 <span class="math display">\[
+\hat{\Theta}_{MLE} = \arg\max_{\theta} ln p(\mathbf{x};\Theta) = \arg\max_{\theta} \sum_{i=1}^n ln p(x_i;\Theta)
+\]</span> 当含有隐变量<span class="math inline">\(z\)</span>时，MLE变为求解如下问题 <span class="math display">\[
+\hat{\Theta}_{MLE} = \arg\max_{\Theta} ln p(\mathbf{x};\Theta) = \arg\max_{\Theta} ln\int_{\mathbf{z}} p(\mathbf{x},\mathbf{z};\Theta) d\mathbf{z} \\
+= \arg\max_{\Theta} ln \int_\mathbf{z} p(\mathbf{z};\Theta) p(\mathbf{x}|\mathbf{z};\Theta) d\mathbf{z} \\
+=\arg\max_{\Theta} \int_\mathbf{z} p(\mathbf{z};\Theta) p(\mathbf{x}|\mathbf{z};\Theta) d\mathbf{z} \\
+\]</span> 因数据集<span class="math inline">\(\mathbf{z} = (z_1,...,z_n)\)</span>无法观测到，<span class="math inline">\(p(\mathbf{z};\Theta)\)</span>无法计算，难以求解上述问题</p>
+<h3 id="对数似然函数的下界">对数似然函数的下界</h3>
+<p>在有隐变量<span class="math inline">\(z\)</span>的情况下，为了最大化<span class="math inline">\(ln p(\mathbf{x};\Theta)\)</span>，先对式子做一些变形。假设<span class="math inline">\(q(\mathbf{z})\)</span>是另一个概率分布 <span class="math display">\[
+ln p(\mathbf{x};\Theta) = lnp(\mathbf{x},\mathbf{z};\Theta) - lnp(\mathbf{z}|\mathbf{x};\Theta) \\
+= ln \frac{p(\mathbf{x},\mathbf{z};\Theta)}{q(\mathbf{z})} - ln \frac{p(\mathbf{z}|\mathbf{x};\Theta)}{q(\mathbf{z})}
+\]</span> 然后将等式两边分别对<span class="math inline">\(q(\mathbf{z})\)</span>取数学期望 <span class="math display">\[
+左式求期望 = \int_{\mathbf{z}} ln p(\mathbf{x};\Theta) q(\mathbf{z}) d\mathbf{z} = ln p(\mathbf{x};\Theta) = 左式
+\]</span> 这是因为<span class="math inline">\(lnp(\mathbf{x};\Theta)\)</span>与<span class="math inline">\(\mathbf{z}\)</span>无关可提到外面，这说明左边求期望后还是左式本身 <span class="math display">\[
+lnp(\mathbf{x};\Theta) = 右式求期望 = \int_{\mathbf{z}} ln\frac{p(\mathbf{x},\mathbf{z};\Theta)}{q(\mathbf{z})}q(\mathbf{z}) d\mathbf{z} - \int_{\mathbf{z}} ln \frac{p(\mathbf{z}|\mathbf{x};\Theta)}{q(\mathbf{z})} q(\mathbf{z})d\mathbf{z}
+\]</span> 这里可以发现后一项就是相对熵 <span class="math display">\[
+KL(q(\mathbf{z})||p(\mathbf{z}|\mathbf{x};\Theta)) = - \int_{\mathbf{z}} ln \frac{p(\mathbf{z}|\mathbf{x};\Theta)}{q(\mathbf{z})} q(\mathbf{z})d\mathbf{z} \ge 0
+\]</span> 由于相对熵非负，前一项就是对数似然<span class="math inline">\(ln p(\mathbf{x};\Theta)\)</span>的下界</p>
+<p><span class="math display">\[
+ln p(\mathbf{x};\Theta) \ge \int_{\mathbf{z}} ln\frac{p(\mathbf{x},\mathbf{z};\Theta)}{q(\mathbf{z})}q(\mathbf{z}) d\mathbf{z}
+\]</span></p>
+<h3 id="em算法的导出">EM算法的导出</h3>
+<p>EM算法把第<span class="math inline">\(t\)</span>步迭代时关于<span class="math inline">\(\mathbf{z}\)</span>的后验分布作为<span class="math inline">\(q(\mathbf{z})\)</span>，即令<span class="math inline">\(q(\mathbf{z}) = p(\mathbf{z}|\mathbf{x};\Theta^{(t)})\)</span>，这样就得到了第<span class="math inline">\(t\)</span>步迭代时对数似然的下界记为<span class="math inline">\(B(\Theta,\Theta^{(t)})\)</span> <span class="math display">\[
+ln p(\mathbf{x};\Theta) \ge \int_{\mathbf{z}} ln\frac{p(\mathbf{x},\mathbf{z};\Theta)}{p(\mathbf{z}|\mathbf{x};\Theta^{(t)})}p(\mathbf{z}|\mathbf{x};\Theta^{(t)}) d\mathbf{z} = B(\Theta,\Theta^{(t)})
+\]</span> 为了最大化对数似然函数，EM算法对它的下界<span class="math inline">\(B(\Theta,\Theta^{(t)})\)</span>进行最大化，求解得到的参数作为下一步的参数<span class="math inline">\(\Theta^{(t+1)}\)</span> <span class="math display">\[
+\Theta^{(t+1)} = \arg\max_{\Theta} B(\Theta,\Theta^{(t)}) = \arg\max_{\Theta} \int_\mathbf{z} ln \frac{p(\mathbf{x},\mathbf{z};\Theta)}{p(\mathbf{z}|\mathbf{x};\Theta^{(t)})} p(\mathbf{z}|\mathbf{x};\Theta^{(t)}) d\mathbf{z}
+\]</span> 展开对数项后，注意到<span class="math inline">\(p(\mathbf{z}|\mathbf{x};\Theta^{(t)})\)</span>关于<span class="math inline">\(\Theta\)</span>是常数，上面的迭代公式可化为 <span class="math display">\[
+\Theta^{(t+1)} = \arg\max_{\Theta} B(\Theta,\Theta^{(t)}) = \arg\max_{\Theta} \int_\mathbf{z} ln p(\mathbf{x},\mathbf{z};\Theta) p(\mathbf{z}|\mathbf{x};\Theta^{(t)}) d\mathbf{z} = \arg\max_{\Theta}Q(\Theta,\Theta^{(t)})
+\]</span> 这就是EM算法最终的迭代公式，通常把最后的积分项记为<span class="math inline">\(Q(\Theta,\Theta^{(t)})\)</span>，称为Q函数</p>
+<ul>
+<li>经过这一系列的迭代，每一步选取的<span class="math inline">\(\Theta\)</span>都使下界<span class="math inline">\(B(\Theta,\Theta^{(t)})\)</span>得到增大，迫使对数似然函数也被增大。再由单调有界原理可以证明EM算法将会收敛到一个局部极大值点。</li>
+</ul>
+<p>如果将积分项写成数学期望，则迭代公式还可写作 <span class="math display">\[
+\Theta^{(t+1)} = \arg\max_{\Theta} \mathbb{E}_{\mathbf{z|\mathbf{x};\Theta^{t}}} [lnp(\mathbf{x},\mathbf{z};\Theta)]
+\]</span> 总结一下，EM算法分为E步（求期望步）和M步（最大化步）：</p>
+<ol type="1">
+<li>使用当前步估计的参数<span class="math inline">\(\Theta^{(t)}\)</span>，求对数似然函数关于<span class="math inline">\(\mathbf{z}\)</span>的期望<span class="math inline">\(\mathbb{E}_{\mathbf{z|\mathbf{x};\Theta^{t}}} [lnp(\mathbf{x},\mathbf{z};\Theta)]\)</span></li>
+<li>最大化对数似然函数的期望，求得参数<span class="math inline">\(\Theta^{(t+1)}\)</span>作为下一步迭代的参数</li>
+</ol>
+<h3 id="em算法的收敛性">EM算法的收敛性</h3>
+<p>正如前文所言，EM算法的迭代使对数似然的下界<span class="math inline">\(B(\Theta,\Theta^{(t)})\)</span>不断增大，从而迫使对数似然增大。因此只需要证明<span class="math inline">\(lnp(\mathbf{x};\Theta^{(t)})\)</span>关于迭代次数<span class="math inline">\(t\)</span>单调递增，再用单调有界原理即可证明算法收敛。</p>
+<p>下面证明<span class="math inline">\(lnp(\mathbf{x};\Theta^{(t)})\)</span>单调递增： <span class="math display">\[
+lnp(\mathbf{x};\Theta) = lnp(\mathbf{x},\mathbf{z};\Theta) - lnp(\mathbf{z}|\mathbf{x};\Theta)
+\]</span> 两边对概率分布<span class="math inline">\(p(\mathbf{z}|\mathbf{x};\Theta^{(t)})\)</span>取期望，注意到<span class="math inline">\(lnp(\mathbf{x};\Theta)\)</span>和<span class="math inline">\(\mathbf{z}\)</span>无关 <span class="math display">\[
+lnp(\mathbf{x};\Theta)
+= \int_\mathbf{z} lnp(\mathbf{x},\mathbf{z};\Theta) p(\mathbf{z}|\mathbf{x};\Theta^{(t)}) d\mathbf{z} - \int_\mathbf{z} lnp(\mathbf{z}|\mathbf{x};\Theta) p(\mathbf{z}|\mathbf{x};\Theta^{(t)}) d\mathbf{z}
+\]</span> 等式右边第一项就是<span class="math inline">\(Q(\Theta, \Theta^{(t)})\)</span>，第二项我们记为<span class="math inline">\(H(\Theta, \Theta^{(t)})\)</span></p>
+<p>作差比大小： <span class="math display">\[
+lnp(\mathbf{x};\Theta^{(t+1)}) - lnp(\mathbf{x};\Theta^{(t)}) = [Q(\Theta^{(t+1)},\Theta^{(t)}) - Q(\Theta^{(t)},\Theta^{(t)})] + [H(\Theta^{(t)},\Theta^{(t)}) - H(\Theta^{(t+1)}, \Theta^{(t)})]
+\]</span> 因为<span class="math inline">\(\Theta^{(t+1)} = \arg\max_\Theta Q(\Theta, \Theta^{(t)})\)</span>，自然有<span class="math inline">\(Q(\Theta^{(t+1)},\Theta^{(t)}) \ge Q(\Theta^{(t)},\Theta^{(t)})\)</span>，所以等号右边第一项非负</p>
+<p>再来看右边第二项 <span class="math display">\[
+H(\Theta^{(t)},\Theta^{(t)}) - H(\Theta^{(t+1)}, \Theta^{(t)}) = -\int_{\mathbf{z}} ln\frac{p(\mathbf{z}|\mathbf{x};\Theta^{(t+1)})}{p(\mathbf{z}|\mathbf{x};\Theta^{(t)})} p(\mathbf{z}|\mathbf{x};\Theta^{(t)}) d\mathbf{z} \\
+\ge -ln\int_{\mathbf{z}} \frac{p(\mathbf{z}|\mathbf{x};\Theta^{(t+1)})}{p(\mathbf{z}|\mathbf{x};\Theta^{(t)})} p(\mathbf{z}|\mathbf{x};\Theta^{(t)}) d\mathbf{z}
+= -ln1 = 0
+\]</span> 这说明第二项也是非负的，所以我们证明了 <span class="math display">\[
+lnp(\mathbf{x};\Theta^{(t+1)}) - lnp(\mathbf{x};\Theta^{(t)}) \ge 0
+\]</span> 再由单调有界原理可知，<span class="math inline">\(lnp(\mathbf{x};\Theta^{(t)})\)</span>最终会收敛到某一值</p>
+<p>更进一步可以证明EM算法得到的参数估计序列<span class="math inline">\(\Theta^{(t)}\)</span>会收敛到某个稳定点<span class="math inline">\(\hat{\Theta}\)</span>，这里不再深入。</p>
+<ul>
+<li>EM算法容易受初值影响，只能收敛到局部极大值点而不能收敛到全局最大值点</li>
+</ul>
+<h2 id="高斯混合模型gmm">高斯混合模型（GMM）</h2>
+<h3 id="用高斯分布对数据集建模">用高斯分布对数据集建模</h3>
+<p>高斯混合模型使用<span class="math inline">\(K\)</span>个高斯分布的加权和对数据集进行建模，认为观测数据分两步生成：</p>
+<ol type="1">
+<li>由离散型随机变量<span class="math inline">\(z\)</span>选择数据属于哪个成分，<span class="math inline">\(z\)</span>的概率分布是<span class="math inline">\(P(z=k)=\alpha_k\)</span>；</li>
+<li>假设选出的是第<span class="math inline">\(k\)</span>个成分，在第<span class="math inline">\(k\)</span>个高斯分布中采样得到一个观测数据，重复<span class="math inline">\(n\)</span>次这样的操作得到整个数据集<span class="math inline">\(\mathbf{x} = \{x_1,..,x_n\}\)</span></li>
+</ol>
+<p>于是整个数据集服从的分布为高斯分布的加权和 <span class="math display">\[
+p_{M}(x;\Theta) = \sum_{z} p(x,z) = \sum_{k=1}^K p(x|z)P(z=k)= \sum_{k=1}^K \alpha_k\phi(x;\mu_k,\sigma_k^2)
+\]</span> 其中<span class="math inline">\(\phi\)</span>是高斯分布的概率密度函数，<span class="math inline">\(\Theta\)</span>是所有参数，即<span class="math inline">\(\Theta = (\mathbf{\alpha},\mathbf{\mu},\mathbf{\sigma^2})\)</span>。<span class="math inline">\(\mu_k,\sigma_k^2\)</span>是第<span class="math inline">\(k\)</span>个高斯分布成分的均值和方差，即 <span class="math display">\[
+\phi(x;\mu_k,\sigma_k^2) = \frac{1}{\sqrt{2\pi}\sigma_k} e^{-\frac{(x-\mu_k)^2}{2\sigma_k^2}}
+\]</span></p>
+<h3 id="用em算法进行参数估计">用EM算法进行参数估计</h3>
+<p>概率分布<span class="math inline">\(p_{M}(x;\Theta)\)</span>中需要估计的参数是<span class="math inline">\(\mathbf{\alpha}=(\alpha_1,...,\alpha_K),\mathbf{\mu}=(\mu_1,...,\mu_K),\mathbf{\sigma^2}=(\sigma_1^2,...,\sigma_K^2)\)</span></p>
+<p>由于随机变量<span class="math inline">\(z\)</span>无法被观测到，只能通过EM算法进行求解：</p>
+<h3 id="e-step">E-Step</h3>
+<p>以下记<span class="math inline">\(\Theta = (\mathbf{\alpha},\mathbf{\mu},\mathbf{\sigma^2}),\Theta^{(t)} = (\mathbf{\mu}^{(t)},\mathbf{\sigma^{(t)}},\mathbf{\alpha^{(t)}})\)</span></p>
+<p>先写出完整数据的似然函数 <span class="math display">\[
+p(\mathbf{x},\mathbf{z};\Theta)
+= \prod_{k=1}^K \prod_{i=1}^n [\alpha_k \phi(x_i;\mu_k,\sigma_k^2)]^{z_{ik}}
+= \prod_{k=1}^K \prod_{i=1}^n [\alpha_k \frac{1}{\sqrt{2\pi}\sigma_k} e^{-\frac{(x_i-\mu_k)^2}{2\sigma_k^2}}]^{z_{ik}}
+\]</span> 这里<span class="math inline">\(z_{ik}\)</span>是0-1随机变量，即示性函数<span class="math inline">\(z_{ik}=\mathbb{I}(z_i=k)\)</span> <span class="math display">\[
+z_{ik}= \begin{cases}
+1,  &amp; z_i =k \\
+0, &amp; z_i \ne k
+\end{cases}
+\]</span> 再写出完整数据的对数似然函数 <span class="math display">\[
+lnp(\mathbf{x},\mathbf{z};\Theta) = \sum_{k=1}^K \sum_{i=1}^n z_{ik}[ln\alpha_k - ln\sqrt{2\pi}-ln\sigma_k -\frac{(x_i-\mu_k)^2}{2\sigma_k^2} ]
+\]</span> 再写出<span class="math inline">\(Q\)</span>函数 <span class="math display">\[
+Q(\Theta,\Theta^{(t)})=
+\mathbb{E}_{\mathbf{z}|\mathbf{x};\Theta^{(t)}}
+[lnp(\mathbf{x},\mathbf{z};\Theta)] \\
+= \sum_{k=1}^K \sum_{i=1}^n \mathbb{E}_{\mathbf{z}|\mathbf{x};\Theta^{(t)}}[z_{ik}][ln\alpha_k - ln\sqrt{2\pi}-ln\sigma_k -\frac{(x_i-\mu_k)^2}{2\sigma_k^2} ]
+\]</span> 为了方便以下叙述，这里先计算<span class="math inline">\(\mathbb{E}_{\mathbf{z}|\mathbf{x};\Theta^{(t)}}[z_{ik}]\)</span> <span class="math display">\[
+\mathbb{E}_{\mathbf{z}|\mathbf{x};\Theta^{(t)}}[z_{ik}] 
+= P(z_i=k|{x_i};\Theta^{(t)}) 
+= \frac{P(z_i=k,x_i;\Theta^{(t)})}{p(x_i;\Theta^{(t)})}
+= \frac{P(z_i=k,x_i;\Theta^{(t)})}{\sum_{k=1}^K P(x_i,z_i=k;\Theta^{(t)})} \\
+= \frac{p(x_i|z_i=k;\Theta^{(t)})P(z_i=k;\Theta^{(t)})}{\sum_{k=1}^K p(x_i|z_i=k;\Theta^{(t)})P(z_i=k;\Theta^{(t)})} = \frac{\alpha_k^{(t)}\phi(x_i;\Theta_k^{(t)})}{\sum_{k=1}^K \alpha_k^{(t)}\phi(x_i;\Theta_k^{(t)}) }
+\]</span></p>
+<h3 id="m-step">M-Step</h3>
+<p>为求解<span class="math inline">\(\Theta^{(t+1)} = \arg\max_{\Theta}Q(\Theta,\Theta^{(t)})\)</span>，只需分别令<span class="math inline">\(Q\)</span>函数对<span class="math inline">\(\mu_k,\sigma_k^2,\alpha_k\)</span>偏导数为0</p>
+<p>求导时需注意到$_{|;^{(t)}}[z_{ik}] <span class="math inline">\(的表达式与\)</span>_k,_k^2,_k$都无关</p>
+<p>先令<span class="math inline">\(Q\)</span>对<span class="math inline">\(\mu_k\)</span>的偏导数为0 <span class="math display">\[
+\frac{\partial Q(\Theta,\Theta^{(t)})}{\partial \mu_k} 
+= \sum_{i=1}^n\mathbb{E}_{\mathbf{z}|\mathbf{x};\Theta^{(t)}}[z_{ik}] \frac{x_i - \mu_k}{\sigma_k^2} = 0
+\]</span> 化简得到 <span class="math display">\[
+\mu_k^{(t+1)} = \frac{\sum_{i=1}^n \mathbb{E}_{\mathbf{z}|\mathbf{x};\Theta^{(t)}}[z_{ik}]x_i}{\sum_{i=1}^n \mathbb{E}_{\mathbf{z}|\mathbf{x};\Theta^{(t)}}[z_{ik}]}
+\]</span></p>
+<p>再令<span class="math inline">\(Q\)</span>对<span class="math inline">\(\sigma_k^2\)</span>的偏导数为0 <span class="math display">\[
+\frac{\partial Q(\Theta,\Theta^{(t)})}{\partial \sigma_k^2} 
+= \sum_{i=1}^n \mathbb{E}_{\mathbf{z}|\mathbf{x};\Theta^{(t)}}[z_{ik}] \frac{(x_i - \mu_k)^2 - \sigma_k^2}{2\sigma_k^4} = 0
+\]</span> 化简得到 <span class="math display">\[
+{\sigma_k^{2}}^{(t+1)} = \frac{\sum_{i=1}^n \mathbb{E}_{\mathbf{z}|\mathbf{x};\Theta^{(t)}}[z_{ik}] (x_i-\mu_k)^2}{\sum_{i=1}^n \mathbb{E}_{\mathbf{z}|\mathbf{x};\Theta^{(t)}}[z_{ik}]}
+\]</span> 最后求解<span class="math inline">\(\alpha_k^{(t+1)}\)</span>，注意需要满足约束条件<span class="math inline">\(\sum_{k=1}^K \alpha_k = 1\)</span>，因此用拉格朗日乘子法求解 <span class="math display">\[
+L = Q(\Theta, \Theta^{(t)}) + \lambda (\sum_{k=1}^K \alpha_k -1)
+\]</span></p>
+<p><span class="math display">\[
+\frac{\partial L}{\partial \alpha_k} = \lambda + \frac{1}{\alpha_k}\sum_{i=1}^n \mathbb{E}_{\mathbf{z}|\mathbf{x};\Theta^{(t)}}[z_{ik}] = 0
+\]</span></p>
+<p>化简得 <span class="math display">\[
+\alpha_k^{(t+1)} = \frac{-\sum_{i=1}^n \mathbb{E}_{\mathbf{z}|\mathbf{x};\Theta^{(t)}}[z_{ik}]}{\lambda}
+\]</span> 加上约束条件<span class="math inline">\(\sum_{k=1}^K \alpha_k = 1\)</span>可得 <span class="math display">\[
+-\sum_{k=1}^K \sum_{i=1}^n \mathbb{E}_{\mathbf{z}|\mathbf{x};\Theta^{(t)}}[z_{ik}] = \lambda
+\]</span> 注意到<span class="math inline">\(\sum_{k=1}^K \mathbb{E}_{\mathbf{z}|\mathbf{x};\Theta^{(t)}}[z_{ik}] = 1\)</span>，所以<span class="math inline">\(\lambda = -n\)</span> <span class="math display">\[
+\alpha_k^{(t+1)} = \frac{\sum_{i=1}^n \mathbb{E}_{\mathbf{z}|\mathbf{x};\Theta^{(t)}}[z_{ik}]}{n}
+\]</span> 这样就得到了GMM最终的迭代公式 <span class="math display">\[
+\mathbb{E}_{\mathbf{z}|\mathbf{x};\Theta^{(t)}}[z_{ik}] = \frac{\alpha_k^{(t)}\phi(x_i;\Theta_k^{(t)})}{\sum_{k=1}^K \alpha_k^{(t)}\phi(x_i;\Theta_k^{(t)}) } \\
+\mu_k^{(t+1)} = \frac{\sum_{i=1}^n \mathbb{E}_{\mathbf{z}|\mathbf{x};\Theta^{(t)}}[z_{ik}]x_i}{\sum_{i=1}^n \mathbb{E}_{\mathbf{z}|\mathbf{x};\Theta^{(t)}}[z_{ik}]} \\
+{\sigma_k^{2}}^{(t+1)} = \frac{\sum_{i=1}^n \mathbb{E}_{\mathbf{z}|\mathbf{x};\Theta^{(t)}}[z_{ik}] (x_i-\mu_k)^2}{\sum_{i=1}^n \mathbb{E}_{\mathbf{z}|\mathbf{x};\Theta^{(t)}}[z_{ik}]} \\
+\alpha_k^{(t+1)} = \frac{\sum_{i=1}^n \mathbb{E}_{\mathbf{z}|\mathbf{x};\Theta^{(t)}}[z_{ik}]}{n}
+\]</span> 模型训练结束后可用来进行聚类，数据<span class="math inline">\(x_i\)</span>的类标记 <span class="math display">\[
+\lambda_i = \arg\max_k \mathbb{E}_{\mathbf{z}|\mathbf{x};\hat{\Theta}}[z_{ik}]
+\]</span> 下面是西瓜书给出的高斯混合聚类算法伪代码，和本文记号有一点区别</p>
+<figure>
+<img src="https://i.loli.net/2020/11/10/Fcy3MZePr4wB6za.png" alt="image-20201110174159111" /><figcaption aria-hidden="true">image-20201110174159111</figcaption>
+</figure>
+<h2 id="参考文献">参考文献</h2>
+<p>周志华. <em>机器学习</em>. 北京: 清华大学出版社, 2016. Print.</p>
+<p>李航. <em>统计学习方法（第2版）</em>. 清华大学出版社, 2019. Print.</p>
+<p><a target="_blank" rel="noopener" href="https://zhuanlan.zhihu.com/p/67107370">一篇推导比较详细的知乎</a></p>
+<p><a target="_blank" rel="noopener" href="https://www.bilibili.com/video/BV1aE411o7qd?p=60">白板推导系列视频</a></p>
+
+    </div>
+
+    
+    
+    
+      
+  <div class="popular-posts-header">相关文章</div>
+  <ul class="popular-posts">
+    <li class="popular-posts-item">
+      <div class="popular-posts-title"><a href="\2020\06\28\AdaBoost小结\" rel="bookmark">AdaBoost小结</a></div>
+    </li>
+    <li class="popular-posts-item">
+      <div class="popular-posts-title"><a href="\2020\04\25\logistic Regression\" rel="bookmark">Logistic Regression小结</a></div>
+    </li>
+  </ul>
+
+
+    <footer class="post-footer">
+          
+
+<div class="post-copyright">
+<ul>
+  <li class="post-copyright-author">
+      <strong>本文作者： </strong>ZZM
+  </li>
+  <li class="post-copyright-link">
+      <strong>本文链接：</strong>
+      <a href="https://piggerzzm.github.io/2020/11/09/EM/" title="EM算法和高斯混合模型">https://piggerzzm.github.io/2020/11/09/EM/</a>
+  </li>
+  <li class="post-copyright-license">
+    <strong>版权声明： </strong>本博客所有文章除特别声明外，均采用 <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/deed.zh" rel="noopener" target="_blank"><i class="fab fa-fw fa-creative-commons"></i>BY-NC-SA</a> 许可协议。转载请注明出处！
+  </li>
+</ul>
+</div>
+
+          <div class="post-tags">
+              <a href="/tags/%E6%9C%BA%E5%99%A8%E5%AD%A6%E4%B9%A0/" rel="tag"><i class="fa fa-tag"></i> 机器学习</a>
+          </div>
+
+        
+
+          <div class="post-nav">
+            <div class="post-nav-item">
+                <a href="/2020/06/28/AdaBoost%E5%B0%8F%E7%BB%93/" rel="prev" title="AdaBoost小结">
+                  <i class="fa fa-chevron-left"></i> AdaBoost小结
+                </a>
+            </div>
+            <div class="post-nav-item">
+            </div>
+          </div>
+    </footer>
+  </article>
+</div>
+
+
+
+
+
+
+      
+    <div class="comments" id="valine-comments"></div>
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      const activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      const commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+    </div>
+  </main>
+
+  <footer class="footer">
+    <div class="footer-inner">
+      
+
+      
+
+<div class="copyright">
+  
+  &copy; 2015 – 
+  <span itemprop="copyrightYear">2020</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">ZZM</span>
+</div>
+<div class="wordcount">
+  <span class="post-meta-item">
+    <span class="post-meta-item-icon">
+      <i class="fa fa-chart-line"></i>
+    </span>
+      <span>站点总字数：</span>
+    <span title="站点总字数">41k</span>
+  </span>
+  <span class="post-meta-item">
+    <span class="post-meta-item-icon">
+      <i class="fa fa-coffee"></i>
+    </span>
+      <span>站点阅读时长 &asymp;</span>
+    <span title="站点阅读时长">37 分钟</span>
+  </span>
+</div>
+  <div class="powered-by">由 <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://theme-next.js.org/" class="theme-link" rel="noopener" target="_blank">NexT.Gemini</a> 强力驱动
+  </div>
+
+    </div>
+  </footer>
+
+  
+  <script size="300" alpha="0.6" zIndex="-1" src="//cdn.jsdelivr.net/npm/ribbon.js@1.0.2/dist/ribbon.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/animejs@3.2.0/lib/anime.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/jquery@3.5.1/dist/jquery.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/@fancyapps/fancybox@3.5.7/dist/jquery.fancybox.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/pangu@4.0.7/dist/browser/pangu.min.js"></script>
+<script src="/js/utils.js"></script><script src="/js/motion.js"></script><script src="/js/next-boot.js"></script><script src="/js/bookmark.js"></script>
+
+  
+
+
+
+
+  <script src="/js/local-search.js"></script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+  <script>
+    NProgress.configure({
+      showSpinner: true
+    });
+    NProgress.start();
+    document.addEventListener('readystatechange', () => {
+      if (document.readyState === 'interactive') {
+        NProgress.inc(0.8);
+      }
+      if (document.readyState === 'complete') {
+        NProgress.done();
+      }
+    });
+    document.addEventListener('pjax:send', () => {
+      NProgress.start();
+    });
+    document.addEventListener('pjax:success', () => {
+      NProgress.done();
+    });
+  </script>
+
+
+  
+
+
+
+
+
+
+
+
+  
+
+  
+      <script>
+  if (typeof MathJax === 'undefined') {
+    window.MathJax = {
+      tex: {
+        inlineMath: {'[+]': [['$', '$']]},
+        tags: 'ams'
+      },
+      options: {
+        renderActions: {
+          findScript: [10, doc => {
+            document.querySelectorAll('script[type^="math/tex"]').forEach(node => {
+              const display = !!node.type.match(/; *mode=display/);
+              const math = new doc.options.MathItem(node.textContent, doc.inputJax[0], display);
+              const text = document.createTextNode('');
+              node.parentNode.replaceChild(text, node);
+              math.start = {node: text, delim: '', n: 0};
+              math.end = {node: text, delim: '', n: 0};
+              doc.math.push(math);
+            });
+          }, '', false],
+          insertedScript: [200, () => {
+            document.querySelectorAll('mjx-container').forEach(node => {
+              const target = node.parentNode;
+              if (target.nodeName.toLowerCase() === 'li') {
+                target.parentNode.classList.add('has-jax');
+              }
+            });
+          }, '', false]
+        }
+      }
+    };
+    const script = document.createElement('script');
+    script.src = '//cdn.jsdelivr.net/npm/mathjax@3.1.2/es5/tex-mml-chtml.js';
+    script.defer = true;
+    document.head.appendChild(script);
+  } else {
+    MathJax.startup.document.state(0);
+    MathJax.typesetClear();
+    MathJax.texReset();
+    MathJax.typeset();
+  }
+</script>
+
+    
+
+  
+  <script src="//cdn.jsdelivr.net/npm/quicklink@2.0.0/dist/quicklink.umd.js"></script>
+  <script>
+      window.addEventListener('load', () => {
+      quicklink.listen({
+        timeout : 3000,
+        priority: true,
+        ignores : [uri => uri.includes('#'),uri => uri === 'https://piggerzzm.github.io/2020/11/09/EM/',]
+      });
+      });
+  </script>
+
+<script>
+NexT.utils.loadComments('#valine-comments', () => {
+  NexT.utils.getScript('//cdn.jsdelivr.net/npm/valine@1.4.14/dist/Valine.min.js', () => {
+    new Valine(Object.assign({"enable":true,"appId":"YxGn9BL01NQdAXTW7w6210Mc-gzGzoHsz","appKey":"GfrAiAKA9u6deyqPQx87GSQN","serverURLs":"https://yxgn9bl0.lc-cn-n1-shared.com","placeholder":"Just go go","avatar":"mm","meta":["nick","mail","link"],"pageSize":10,"lang":null,"visitor":true,"comment_count":true,"recordIP":true,"enableQQ":true,"requiredFields":[]}, {
+      el: '#valine-comments',
+      path: "/2020/11/09/EM/",
+      serverURLs: "https://yxgn9bl0.lc-cn-n1-shared.com"
+    }));
+  }, window.Valine);
+});
+</script>
+
+</body>
+</html>
