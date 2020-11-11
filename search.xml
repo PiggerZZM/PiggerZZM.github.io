@@ -1,6 +1,176 @@
 <?xml version="1.0" encoding="utf-8"?>
 <search>
   <entry>
+    <title>EM算法和高斯混合模型</title>
+    <url>/2020/11/09/EM/</url>
+    <content><![CDATA[<h1 id="em算法和高斯混合模型">EM算法和高斯混合模型</h1>
+<p>《统计学习方法》对EM算法和HMM的介绍都比较详细，但有不少地方绕弯路，而且记号稍显混乱；《西瓜书》对EM算法和HMM的介绍都非常简洁，有许多细节被略去；B站上的白板推导系列里也有EM算法和HMM详细推导。</p>
+<p>为了这次数据挖掘小组作业，在这里整理一下EM和HMM。</p>
+<a id="more"></a>
+<h2 id="em算法">EM算法</h2>
+<p>EM算法是解决含有隐变量情况下的极大似然估计算法</p>
+<h3 id="极大似然估计">极大似然估计</h3>
+<p>已知数据集<span class="math inline">\(\mathbf{x} = (x_1,...,x_n)\)</span>，先验分布为<span class="math inline">\(p(x;\Theta)\)</span>。在有独立同分布的假设下容易写出联合概率分布<span class="math inline">\(p(\mathbf{x};\Theta)\)</span>，对参数<span class="math inline">\(\Theta\)</span>的极大似然估计化归为求解如下问题 <span class="math display">\[
+\hat{\Theta}_{MLE} = \arg\max_{\theta} ln p(\mathbf{x};\Theta) = \arg\max_{\theta} \sum_{i=1}^n ln p(x_i;\Theta)
+\]</span> 当含有隐变量<span class="math inline">\(z\)</span>时，MLE变为求解如下问题 <span class="math display">\[
+\begin{gather*}
+\hat{\Theta}_{MLE} = \arg\max_{\Theta} ln p(\mathbf{x};\Theta) = \arg\max_{\Theta} ln\int_{\mathbf{z}} p(\mathbf{x},\mathbf{z};\Theta) d\mathbf{z} \\
+= \arg\max_{\Theta} ln \int_\mathbf{z} p(\mathbf{z};\Theta) p(\mathbf{x}|\mathbf{z};\Theta) d\mathbf{z}
+=\arg\max_{\Theta} \int_\mathbf{z} p(\mathbf{z};\Theta) p(\mathbf{x}|\mathbf{z};\Theta) d\mathbf{z} \\
+\end{gather*}
+\]</span> 因数据集<span class="math inline">\(\mathbf{z} = (z_1,...,z_n)\)</span>无法观测到，<span class="math inline">\(p(\mathbf{z};\Theta)\)</span>无法计算，难以求解上述问题</p>
+<h3 id="对数似然函数的下界">对数似然函数的下界</h3>
+<p>在有隐变量<span class="math inline">\(z\)</span>的情况下，为了最大化<span class="math inline">\(ln p(\mathbf{x};\Theta)\)</span>，先对式子做一些变形。假设<span class="math inline">\(q(\mathbf{z})\)</span>是另一个概率分布 <span class="math display">\[
+ln p(\mathbf{x};\Theta) = lnp(\mathbf{x},\mathbf{z};\Theta) - lnp(\mathbf{z}|\mathbf{x};\Theta)
+= ln \frac{p(\mathbf{x},\mathbf{z};\Theta)}{q(\mathbf{z})} - ln \frac{p(\mathbf{z}|\mathbf{x};\Theta)}{q(\mathbf{z})}
+\]</span> 然后将等式两边分别对<span class="math inline">\(q(\mathbf{z})\)</span>取数学期望 <span class="math display">\[
+左式求期望 = \int_{\mathbf{z}} ln p(\mathbf{x};\Theta) q(\mathbf{z}) d\mathbf{z} = ln p(\mathbf{x};\Theta) = 左式
+\]</span> 这是因为<span class="math inline">\(lnp(\mathbf{x};\Theta)\)</span>与<span class="math inline">\(\mathbf{z}\)</span>无关可提到外面，这说明左边求期望后还是左式本身 <span class="math display">\[
+lnp(\mathbf{x};\Theta) = 右式求期望 = \int_{\mathbf{z}} ln\frac{p(\mathbf{x},\mathbf{z};\Theta)}{q(\mathbf{z})}q(\mathbf{z}) d\mathbf{z} - \int_{\mathbf{z}} ln \frac{p(\mathbf{z}|\mathbf{x};\Theta)}{q(\mathbf{z})} q(\mathbf{z})d\mathbf{z}
+\]</span> 这里可以发现后一项就是相对熵 <span class="math display">\[
+KL(q(\mathbf{z})||p(\mathbf{z}|\mathbf{x};\Theta)) = - \int_{\mathbf{z}} ln \frac{p(\mathbf{z}|\mathbf{x};\Theta)}{q(\mathbf{z})} q(\mathbf{z})d\mathbf{z} \ge 0
+\]</span> 由于相对熵非负，前一项就是对数似然<span class="math inline">\(ln p(\mathbf{x};\Theta)\)</span>的下界</p>
+<p><span class="math display">\[
+ln p(\mathbf{x};\Theta) \ge \int_{\mathbf{z}} ln\frac{p(\mathbf{x},\mathbf{z};\Theta)}{q(\mathbf{z})}q(\mathbf{z}) d\mathbf{z}
+\]</span></p>
+<h3 id="em算法的导出">EM算法的导出</h3>
+<p>EM算法把第<span class="math inline">\(t\)</span>步迭代时关于<span class="math inline">\(\mathbf{z}\)</span>的后验分布作为<span class="math inline">\(q(\mathbf{z})\)</span>，即令<span class="math inline">\(q(\mathbf{z}) = p(\mathbf{z}|\mathbf{x};\Theta^{(t)})\)</span>，这样就得到了第<span class="math inline">\(t\)</span>步迭代时对数似然的下界记为<span class="math inline">\(B(\Theta,\Theta^{(t)})\)</span> <span class="math display">\[
+ln p(\mathbf{x};\Theta) \ge \int_{\mathbf{z}} ln\frac{p(\mathbf{x},\mathbf{z};\Theta)}{p(\mathbf{z}|\mathbf{x};\Theta^{(t)})}p(\mathbf{z}|\mathbf{x};\Theta^{(t)}) d\mathbf{z} = B(\Theta,\Theta^{(t)})
+\]</span> 为了最大化对数似然函数，EM算法对它的下界<span class="math inline">\(B(\Theta,\Theta^{(t)})\)</span>进行最大化，求解得到的参数作为下一步的参数<span class="math inline">\(\Theta^{(t+1)}\)</span> <span class="math display">\[
+\Theta^{(t+1)} = \arg\max_{\Theta} B(\Theta,\Theta^{(t)}) = \arg\max_{\Theta} \int_\mathbf{z} ln \frac{p(\mathbf{x},\mathbf{z};\Theta)}{p(\mathbf{z}|\mathbf{x};\Theta^{(t)})} p(\mathbf{z}|\mathbf{x};\Theta^{(t)}) d\mathbf{z}
+\]</span> 展开对数项后，注意到<span class="math inline">\(p(\mathbf{z}|\mathbf{x};\Theta^{(t)})\)</span>关于<span class="math inline">\(\Theta\)</span>是常数，上面的迭代公式可化为 <span class="math display">\[
+\Theta^{(t+1)} = \arg\max_{\Theta} B(\Theta,\Theta^{(t)}) = \arg\max_{\Theta} \int_\mathbf{z} ln p(\mathbf{x},\mathbf{z};\Theta) p(\mathbf{z}|\mathbf{x};\Theta^{(t)}) d\mathbf{z} = \arg\max_{\Theta}Q(\Theta,\Theta^{(t)})
+\]</span> 这就是EM算法最终的迭代公式，通常把最后的积分项记为<span class="math inline">\(Q(\Theta,\Theta^{(t)})\)</span>，称为Q函数</p>
+<ul>
+<li>经过这一系列的迭代，每一步选取的<span class="math inline">\(\Theta\)</span>都使下界<span class="math inline">\(B(\Theta,\Theta^{(t)})\)</span>得到增大，迫使对数似然函数也被增大。再由单调有界原理可以证明EM算法将会收敛到一个局部极大值点。</li>
+</ul>
+<p>如果将积分项写成数学期望，则迭代公式还可写作 <span class="math display">\[
+\Theta^{(t+1)} = \arg\max_{\Theta} \mathbb{E}_{\mathbf{z|\mathbf{x};\Theta^{t}}} [lnp(\mathbf{x},\mathbf{z};\Theta)]
+\]</span> 总结一下，EM算法分为E步（求期望步）和M步（最大化步）：</p>
+<ol type="1">
+<li>使用当前步估计的参数<span class="math inline">\(\Theta^{(t)}\)</span>，求对数似然函数关于<span class="math inline">\(\mathbf{z}\)</span>的期望<span class="math inline">\(\mathbb{E}_{\mathbf{z|\mathbf{x};\Theta^{t}}} [lnp(\mathbf{x},\mathbf{z};\Theta)]\)</span></li>
+<li>最大化对数似然函数的期望，求得参数<span class="math inline">\(\Theta^{(t+1)}\)</span>作为下一步迭代的参数</li>
+</ol>
+<h3 id="em算法的收敛性">EM算法的收敛性</h3>
+<p>正如前文所言，EM算法的迭代使对数似然的下界<span class="math inline">\(B(\Theta,\Theta^{(t)})\)</span>不断增大，从而迫使对数似然增大。因此只需要证明<span class="math inline">\(lnp(\mathbf{x};\Theta^{(t)})\)</span>关于迭代次数<span class="math inline">\(t\)</span>单调递增，再用单调有界原理即可证明算法收敛。</p>
+<p>下面证明<span class="math inline">\(lnp(\mathbf{x};\Theta^{(t)})\)</span>单调递增： <span class="math display">\[
+lnp(\mathbf{x};\Theta) = lnp(\mathbf{x},\mathbf{z};\Theta) - lnp(\mathbf{z}|\mathbf{x};\Theta)
+\]</span> 两边对概率分布<span class="math inline">\(p(\mathbf{z}|\mathbf{x};\Theta^{(t)})\)</span>取期望，注意到<span class="math inline">\(lnp(\mathbf{x};\Theta)\)</span>和<span class="math inline">\(\mathbf{z}\)</span>无关 <span class="math display">\[
+lnp(\mathbf{x};\Theta)
+= \int_\mathbf{z} lnp(\mathbf{x},\mathbf{z};\Theta) p(\mathbf{z}|\mathbf{x};\Theta^{(t)}) d\mathbf{z} - \int_\mathbf{z} lnp(\mathbf{z}|\mathbf{x};\Theta) p(\mathbf{z}|\mathbf{x};\Theta^{(t)}) d\mathbf{z}
+\]</span> 等式右边第一项就是<span class="math inline">\(Q(\Theta, \Theta^{(t)})\)</span>，第二项我们记为<span class="math inline">\(H(\Theta, \Theta^{(t)})\)</span></p>
+<p>作差比大小： <span class="math display">\[
+lnp(\mathbf{x};\Theta^{(t+1)}) - lnp(\mathbf{x};\Theta^{(t)}) = [Q(\Theta^{(t+1)},\Theta^{(t)}) - Q(\Theta^{(t)},\Theta^{(t)})] + [H(\Theta^{(t)},\Theta^{(t)}) - H(\Theta^{(t+1)}, \Theta^{(t)})]
+\]</span> 因为<span class="math inline">\(\Theta^{(t+1)} = \arg\max_\Theta Q(\Theta, \Theta^{(t)})\)</span>，自然有<span class="math inline">\(Q(\Theta^{(t+1)},\Theta^{(t)}) \ge Q(\Theta^{(t)},\Theta^{(t)})\)</span>，所以等号右边第一项非负</p>
+<p>再来看右边第二项 <span class="math display">\[
+\begin{gather*}
+H(\Theta^{(t)},\Theta^{(t)}) - H(\Theta^{(t+1)}, \Theta^{(t)}) = -\int_{\mathbf{z}} ln\frac{p(\mathbf{z}|\mathbf{x};\Theta^{(t+1)})}{p(\mathbf{z}|\mathbf{x};\Theta^{(t)})} p(\mathbf{z}|\mathbf{x};\Theta^{(t)}) d\mathbf{z} \\
+\ge -ln\int_{\mathbf{z}} \frac{p(\mathbf{z}|\mathbf{x};\Theta^{(t+1)})}{p(\mathbf{z}|\mathbf{x};\Theta^{(t)})} p(\mathbf{z}|\mathbf{x};\Theta^{(t)}) d\mathbf{z}
+= -ln1 = 0
+\end{gather*}
+\]</span> 这说明第二项也是非负的，所以我们证明了 <span class="math display">\[
+lnp(\mathbf{x};\Theta^{(t+1)}) - lnp(\mathbf{x};\Theta^{(t)}) \ge 0
+\]</span> 再由单调有界原理可知，<span class="math inline">\(lnp(\mathbf{x};\Theta^{(t)})\)</span>最终会收敛到某一值</p>
+<p>更进一步可以证明EM算法得到的参数估计序列<span class="math inline">\(\Theta^{(t)}\)</span>会收敛到某个稳定点<span class="math inline">\(\hat{\Theta}\)</span>，这里不再深入。</p>
+<ul>
+<li>EM算法容易受初值影响，只能收敛到局部极大值点而不能收敛到全局最大值点</li>
+</ul>
+<h2 id="高斯混合模型gmm">高斯混合模型（GMM）</h2>
+<h3 id="用高斯分布对数据集建模">用高斯分布对数据集建模</h3>
+<p>高斯混合模型使用<span class="math inline">\(K\)</span>个高斯分布的加权和对数据集进行建模，认为观测数据分两步生成：</p>
+<ol type="1">
+<li>由离散型随机变量<span class="math inline">\(z\)</span>选择数据属于哪个成分，<span class="math inline">\(z\)</span>的概率分布是<span class="math inline">\(P(z=k)=\alpha_k\)</span>；</li>
+<li>假设选出的是第<span class="math inline">\(k\)</span>个成分，在第<span class="math inline">\(k\)</span>个高斯分布中采样得到一个观测数据，重复<span class="math inline">\(n\)</span>次这样的操作得到整个数据集<span class="math inline">\(\mathbf{x} = \{x_1,..,x_n\}\)</span></li>
+</ol>
+<p>于是整个数据集服从的分布为高斯分布的加权和 <span class="math display">\[
+p_{M}(x;\Theta) = \sum_{z} p(x,z) = \sum_{k=1}^K p(x|z)P(z=k)= \sum_{k=1}^K \alpha_k\phi(x;\mu_k,\sigma_k^2)
+\]</span> 其中<span class="math inline">\(\phi\)</span>是高斯分布的概率密度函数，<span class="math inline">\(\Theta\)</span>是所有参数，即<span class="math inline">\(\Theta = (\mathbf{\alpha},\mathbf{\mu},\mathbf{\sigma^2})\)</span>。<span class="math inline">\(\mu_k,\sigma_k^2\)</span>是第<span class="math inline">\(k\)</span>个高斯分布成分的均值和方差，即 <span class="math display">\[
+\phi(x;\mu_k,\sigma_k^2) = \frac{1}{\sqrt{2\pi}\sigma_k} e^{-\frac{(x-\mu_k)^2}{2\sigma_k^2}}
+\]</span></p>
+<h3 id="用em算法进行参数估计">用EM算法进行参数估计</h3>
+<p>概率分布<span class="math inline">\(p_{M}(x;\Theta)\)</span>中需要估计的参数是</p>
+<p><span class="math inline">\(\mathbf{\alpha}=(\alpha_1,...,\alpha_K),\mathbf{\mu}=(\mu_1,...,\mu_K),\mathbf{\sigma^2}=(\sigma_1^2,...,\sigma_K^2)\)</span></p>
+<p>由于随机变量<span class="math inline">\(z\)</span>无法被观测到，只能通过EM算法进行求解：</p>
+<h3 id="e-step">E-Step</h3>
+<p>以下记<span class="math inline">\(\Theta = (\mathbf{\alpha},\mathbf{\mu},\mathbf{\sigma^2}),\Theta^{(t)} = (\mathbf{\mu}^{(t)},\mathbf{\sigma^{(t)}},\mathbf{\alpha^{(t)}})\)</span></p>
+<p>先写出完整数据的似然函数 <span class="math display">\[
+p(\mathbf{x},\mathbf{z};\Theta)
+= \prod_{k=1}^K \prod_{i=1}^n [\alpha_k \phi(x_i;\mu_k,\sigma_k^2)]^{z_{ik}}
+= \prod_{k=1}^K \prod_{i=1}^n [\alpha_k \frac{1}{\sqrt{2\pi}\sigma_k} e^{-\frac{(x_i-\mu_k)^2}{2\sigma_k^2}}]^{z_{ik}}
+\]</span> 这里<span class="math inline">\(z_{ik}\)</span>是0-1随机变量，即示性函数<span class="math inline">\(z_{ik}=\mathbb{I}(z_i=k)\)</span> <span class="math display">\[
+z_{ik}= \begin{cases}
+1,  &amp; z_i =k \\
+0, &amp; z_i \ne k
+\end{cases}
+\]</span> 再写出完整数据的对数似然函数 <span class="math display">\[
+lnp(\mathbf{x},\mathbf{z};\Theta) = \sum_{k=1}^K \sum_{i=1}^n z_{ik}[ln\alpha_k - ln\sqrt{2\pi}-ln\sigma_k -\frac{(x_i-\mu_k)^2}{2\sigma_k^2} ]
+\]</span> 再写出<span class="math inline">\(Q\)</span>函数 <span class="math display">\[
+\begin{gather*}
+Q(\Theta,\Theta^{(t)})=
+\mathbb{E}_{\mathbf{z}|\mathbf{x};\Theta^{(t)}}
+[lnp(\mathbf{x},\mathbf{z};\Theta)] \\
+= \sum_{k=1}^K \sum_{i=1}^n \mathbb{E}_{\mathbf{z}|\mathbf{x};\Theta^{(t)}}[z_{ik}][ln\alpha_k - ln\sqrt{2\pi}-ln\sigma_k -\frac{(x_i-\mu_k)^2}{2\sigma_k^2} ]
+\end{gather*}
+\]</span> 为了方便以下叙述，这里先计算<span class="math inline">\(\mathbb{E}_{\mathbf{z}|\mathbf{x};\Theta^{(t)}}[z_{ik}]\)</span> <span class="math display">\[
+\begin{gather*}
+\mathbb{E}_{\mathbf{z}|\mathbf{x};\Theta^{(t)}}[z_{ik}] 
+= P(z_i=k|{x_i};\Theta^{(t)}) 
+= \frac{P(z_i=k,x_i;\Theta^{(t)})}{p(x_i;\Theta^{(t)})}
+= \frac{P(z_i=k,x_i;\Theta^{(t)})}{\sum_{k=1}^K P(x_i,z_i=k;\Theta^{(t)})} \\
+= \frac{p(x_i|z_i=k;\Theta^{(t)})P(z_i=k;\Theta^{(t)})}{\sum_{k=1}^K p(x_i|z_i=k;\Theta^{(t)})P(z_i=k;\Theta^{(t)})} = \frac{\alpha_k^{(t)}\phi(x_i;\Theta_k^{(t)})}{\sum_{k=1}^K \alpha_k^{(t)}\phi(x_i;\Theta_k^{(t)}) }
+\end{gather*}
+\]</span></p>
+<h3 id="m-step">M-Step</h3>
+<p>为求解<span class="math inline">\(\Theta^{(t+1)} = \arg\max_{\Theta}Q(\Theta,\Theta^{(t)})\)</span>，只需分别令<span class="math inline">\(Q\)</span>函数对<span class="math inline">\(\mu_k,\sigma_k^2,\alpha_k\)</span>偏导数为0</p>
+<p>求导时需注意到<span class="math inline">\(\mathbb{E}_{\mathbf{z}|\mathbf{x};\Theta^{(t)}}[z_{ik}]\)</span>的表达式与<span class="math inline">\(\mu_k,\sigma_k^2,\alpha_k\)</span>都无关</p>
+<p>先令<span class="math inline">\(Q\)</span>对<span class="math inline">\(\mu_k\)</span>的偏导数为0 <span class="math display">\[
+\frac{\partial Q(\Theta,\Theta^{(t)})}{\partial \mu_k} 
+= \sum_{i=1}^n\mathbb{E}_{\mathbf{z}|\mathbf{x};\Theta^{(t)}}[z_{ik}] \frac{x_i - \mu_k}{\sigma_k^2} = 0
+\]</span> 化简得到 <span class="math display">\[
+\mu_k^{(t+1)} = \frac{\sum_{i=1}^n \mathbb{E}_{\mathbf{z}|\mathbf{x};\Theta^{(t)}}[z_{ik}]x_i}{\sum_{i=1}^n \mathbb{E}_{\mathbf{z}|\mathbf{x};\Theta^{(t)}}[z_{ik}]}
+\]</span></p>
+<p>再令<span class="math inline">\(Q\)</span>对<span class="math inline">\(\sigma_k^2\)</span>的偏导数为0 <span class="math display">\[
+\frac{\partial Q(\Theta,\Theta^{(t)})}{\partial \sigma_k^2} 
+= \sum_{i=1}^n \mathbb{E}_{\mathbf{z}|\mathbf{x};\Theta^{(t)}}[z_{ik}] \frac{(x_i - \mu_k)^2 - \sigma_k^2}{2\sigma_k^4} = 0
+\]</span> 化简得到 <span class="math display">\[
+{\sigma_k^{2}}^{(t+1)} = \frac{\sum_{i=1}^n \mathbb{E}_{\mathbf{z}|\mathbf{x};\Theta^{(t)}}[z_{ik}] (x_i-\mu_k)^2}{\sum_{i=1}^n \mathbb{E}_{\mathbf{z}|\mathbf{x};\Theta^{(t)}}[z_{ik}]}
+\]</span> 最后求解<span class="math inline">\(\alpha_k^{(t+1)}\)</span>，注意需要满足约束条件<span class="math inline">\(\sum_{k=1}^K \alpha_k = 1\)</span>，因此用拉格朗日乘子法求解 <span class="math display">\[
+L = Q(\Theta, \Theta^{(t)}) + \lambda (\sum_{k=1}^K \alpha_k -1)
+\]</span></p>
+<p><span class="math display">\[
+\frac{\partial L}{\partial \alpha_k} = \lambda + \frac{1}{\alpha_k}\sum_{i=1}^n \mathbb{E}_{\mathbf{z}|\mathbf{x};\Theta^{(t)}}[z_{ik}] = 0
+\]</span></p>
+<p>化简得 <span class="math display">\[
+\alpha_k^{(t+1)} = \frac{-\sum_{i=1}^n \mathbb{E}_{\mathbf{z}|\mathbf{x};\Theta^{(t)}}[z_{ik}]}{\lambda}
+\]</span> 加上约束条件<span class="math inline">\(\sum_{k=1}^K \alpha_k = 1\)</span>可得 <span class="math display">\[
+-\sum_{k=1}^K \sum_{i=1}^n \mathbb{E}_{\mathbf{z}|\mathbf{x};\Theta^{(t)}}[z_{ik}] = \lambda
+\]</span> 注意到<span class="math inline">\(\sum_{k=1}^K \mathbb{E}_{\mathbf{z}|\mathbf{x};\Theta^{(t)}}[z_{ik}] = 1\)</span>，所以<span class="math inline">\(\lambda = -n\)</span> <span class="math display">\[
+\alpha_k^{(t+1)} = \frac{\sum_{i=1}^n \mathbb{E}_{\mathbf{z}|\mathbf{x};\Theta^{(t)}}[z_{ik}]}{n}
+\]</span> 这样就得到了GMM最终的迭代公式 <span class="math display">\[
+\begin{gather*}
+\mathbb{E}_{\mathbf{z}|\mathbf{x};\Theta^{(t)}}[z_{ik}] = \frac{\alpha_k^{(t)}\phi(x_i;\Theta_k^{(t)})}{\sum_{k=1}^K \alpha_k^{(t)}\phi(x_i;\Theta_k^{(t)}) } \\
+\mu_k^{(t+1)} = \frac{\sum_{i=1}^n \mathbb{E}_{\mathbf{z}|\mathbf{x};\Theta^{(t)}}[z_{ik}]x_i}{\sum_{i=1}^n \mathbb{E}_{\mathbf{z}|\mathbf{x};\Theta^{(t)}}[z_{ik}]} \\
+{\sigma_k^{2}}^{(t+1)} = \frac{\sum_{i=1}^n \mathbb{E}_{\mathbf{z}|\mathbf{x};\Theta^{(t)}}[z_{ik}] (x_i-\mu_k)^2}{\sum_{i=1}^n \mathbb{E}_{\mathbf{z}|\mathbf{x};\Theta^{(t)}}[z_{ik}]} \\
+\alpha_k^{(t+1)} = \frac{\sum_{i=1}^n \mathbb{E}_{\mathbf{z}|\mathbf{x};\Theta^{(t)}}[z_{ik}]}{n}
+\end{gather*}
+\]</span> 模型训练结束后可用来进行聚类，数据<span class="math inline">\(x_i\)</span>的类标记 <span class="math display">\[
+\lambda_i = \arg\max_k \mathbb{E}_{\mathbf{z}|\mathbf{x};\hat{\Theta}}[z_{ik}]
+\]</span> 下面是西瓜书给出的高斯混合聚类算法伪代码，和本文记号有一点区别</p>
+<p><img src="https://i.loli.net/2020/11/10/Fcy3MZePr4wB6za.png" /></p>
+<h2 id="参考文献">参考文献</h2>
+<p>周志华. <em>机器学习</em>. 北京: 清华大学出版社, 2016. Print.</p>
+<p>李航. <em>统计学习方法（第2版）</em>. 清华大学出版社, 2019. Print.</p>
+<p><a href="https://zhuanlan.zhihu.com/p/67107370">一篇推导比较详细的知乎</a></p>
+<p><a href="https://www.bilibili.com/video/BV1aE411o7qd?p=60">白板推导系列视频</a></p>
+]]></content>
+      <categories>
+        <category>计算机科学</category>
+      </categories>
+      <tags>
+        <tag>机器学习</tag>
+      </tags>
+  </entry>
+  <entry>
     <title>AdaBoost小结</title>
     <url>/2020/06/28/AdaBoost%E5%B0%8F%E7%BB%93/</url>
     <content><![CDATA[<h1 id="adaboost">AdaBoost</h1>
@@ -152,167 +322,6 @@ h_t(\boldsymbol{x}) = \arg \min_h \mathbb{E}_{\boldsymbol{x} \sim \mathcal{D}_t}
       </tags>
   </entry>
   <entry>
-    <title>EM算法和高斯混合模型</title>
-    <url>/2020/11/09/EM/</url>
-    <content><![CDATA[<h1 id="em算法和高斯混合模型">EM算法和高斯混合模型</h1>
-<p>《统计学习方法》对EM算法和HMM的介绍都比较详细，但有不少地方绕弯路，而且记号稍显混乱；《西瓜书》对EM算法和HMM的介绍都非常简洁，有许多细节被略去；B站上的白板推导系列里也有EM算法和HMM详细推导。</p>
-<p>为了这次数据挖掘小组作业，在这里整理一下EM和HMM</p>
-<a id="more"></a>
-<h2 id="em算法">EM算法</h2>
-<p>EM算法是解决含有隐变量情况下的极大似然估计算法</p>
-<h3 id="极大似然估计">极大似然估计</h3>
-<p>已知数据集<span class="math inline">\(\mathbf{x} = (x_1,...,x_n)\)</span>，先验分布为<span class="math inline">\(p(x;\Theta)\)</span>。在有独立同分布的假设下容易写出联合概率分布<span class="math inline">\(p(\mathbf{x};\Theta)\)</span>，对参数<span class="math inline">\(\Theta\)</span>的极大似然估计化归为求解如下问题 <span class="math display">\[
-\hat{\Theta}_{MLE} = \arg\max_{\theta} ln p(\mathbf{x};\Theta) = \arg\max_{\theta} \sum_{i=1}^n ln p(x_i;\Theta)
-\]</span> 当含有隐变量<span class="math inline">\(z\)</span>时，MLE变为求解如下问题 <span class="math display">\[
-\hat{\Theta}_{MLE} = \arg\max_{\Theta} ln p(\mathbf{x};\Theta) = \arg\max_{\Theta} ln\int_{\mathbf{z}} p(\mathbf{x},\mathbf{z};\Theta) d\mathbf{z} \\
-= \arg\max_{\Theta} ln \int_\mathbf{z} p(\mathbf{z};\Theta) p(\mathbf{x}|\mathbf{z};\Theta) d\mathbf{z} \\
-=\arg\max_{\Theta} \int_\mathbf{z} p(\mathbf{z};\Theta) p(\mathbf{x}|\mathbf{z};\Theta) d\mathbf{z} \\
-\]</span> 因数据集<span class="math inline">\(\mathbf{z} = (z_1,...,z_n)\)</span>无法观测到，<span class="math inline">\(p(\mathbf{z};\Theta)\)</span>无法计算，难以求解上述问题</p>
-<h3 id="对数似然函数的下界">对数似然函数的下界</h3>
-<p>在有隐变量<span class="math inline">\(z\)</span>的情况下，为了最大化<span class="math inline">\(ln p(\mathbf{x};\Theta)\)</span>，先对式子做一些变形。假设<span class="math inline">\(q(\mathbf{z})\)</span>是另一个概率分布 <span class="math display">\[
-ln p(\mathbf{x};\Theta) = lnp(\mathbf{x},\mathbf{z};\Theta) - lnp(\mathbf{z}|\mathbf{x};\Theta) \\
-= ln \frac{p(\mathbf{x},\mathbf{z};\Theta)}{q(\mathbf{z})} - ln \frac{p(\mathbf{z}|\mathbf{x};\Theta)}{q(\mathbf{z})}
-\]</span> 然后将等式两边分别对<span class="math inline">\(q(\mathbf{z})\)</span>取数学期望 <span class="math display">\[
-左式求期望 = \int_{\mathbf{z}} ln p(\mathbf{x};\Theta) q(\mathbf{z}) d\mathbf{z} = ln p(\mathbf{x};\Theta) = 左式
-\]</span> 这是因为<span class="math inline">\(lnp(\mathbf{x};\Theta)\)</span>与<span class="math inline">\(\mathbf{z}\)</span>无关可提到外面，这说明左边求期望后还是左式本身 <span class="math display">\[
-lnp(\mathbf{x};\Theta) = 右式求期望 = \int_{\mathbf{z}} ln\frac{p(\mathbf{x},\mathbf{z};\Theta)}{q(\mathbf{z})}q(\mathbf{z}) d\mathbf{z} - \int_{\mathbf{z}} ln \frac{p(\mathbf{z}|\mathbf{x};\Theta)}{q(\mathbf{z})} q(\mathbf{z})d\mathbf{z}
-\]</span> 这里可以发现后一项就是相对熵 <span class="math display">\[
-KL(q(\mathbf{z})||p(\mathbf{z}|\mathbf{x};\Theta)) = - \int_{\mathbf{z}} ln \frac{p(\mathbf{z}|\mathbf{x};\Theta)}{q(\mathbf{z})} q(\mathbf{z})d\mathbf{z} \ge 0
-\]</span> 由于相对熵非负，前一项就是对数似然<span class="math inline">\(ln p(\mathbf{x};\Theta)\)</span>的下界</p>
-<p><span class="math display">\[
-ln p(\mathbf{x};\Theta) \ge \int_{\mathbf{z}} ln\frac{p(\mathbf{x},\mathbf{z};\Theta)}{q(\mathbf{z})}q(\mathbf{z}) d\mathbf{z}
-\]</span></p>
-<h3 id="em算法的导出">EM算法的导出</h3>
-<p>EM算法把第<span class="math inline">\(t\)</span>步迭代时关于<span class="math inline">\(\mathbf{z}\)</span>的后验分布作为<span class="math inline">\(q(\mathbf{z})\)</span>，即令<span class="math inline">\(q(\mathbf{z}) = p(\mathbf{z}|\mathbf{x};\Theta^{(t)})\)</span>，这样就得到了第<span class="math inline">\(t\)</span>步迭代时对数似然的下界记为<span class="math inline">\(B(\Theta,\Theta^{(t)})\)</span> <span class="math display">\[
-ln p(\mathbf{x};\Theta) \ge \int_{\mathbf{z}} ln\frac{p(\mathbf{x},\mathbf{z};\Theta)}{p(\mathbf{z}|\mathbf{x};\Theta^{(t)})}p(\mathbf{z}|\mathbf{x};\Theta^{(t)}) d\mathbf{z} = B(\Theta,\Theta^{(t)})
-\]</span> 为了最大化对数似然函数，EM算法对它的下界<span class="math inline">\(B(\Theta,\Theta^{(t)})\)</span>进行最大化，求解得到的参数作为下一步的参数<span class="math inline">\(\Theta^{(t+1)}\)</span> <span class="math display">\[
-\Theta^{(t+1)} = \arg\max_{\Theta} B(\Theta,\Theta^{(t)}) = \arg\max_{\Theta} \int_\mathbf{z} ln \frac{p(\mathbf{x},\mathbf{z};\Theta)}{p(\mathbf{z}|\mathbf{x};\Theta^{(t)})} p(\mathbf{z}|\mathbf{x};\Theta^{(t)}) d\mathbf{z}
-\]</span> 展开对数项后，注意到<span class="math inline">\(p(\mathbf{z}|\mathbf{x};\Theta^{(t)})\)</span>关于<span class="math inline">\(\Theta\)</span>是常数，上面的迭代公式可化为 <span class="math display">\[
-\Theta^{(t+1)} = \arg\max_{\Theta} B(\Theta,\Theta^{(t)}) = \arg\max_{\Theta} \int_\mathbf{z} ln p(\mathbf{x},\mathbf{z};\Theta) p(\mathbf{z}|\mathbf{x};\Theta^{(t)}) d\mathbf{z} = \arg\max_{\Theta}Q(\Theta,\Theta^{(t)})
-\]</span> 这就是EM算法最终的迭代公式，通常把最后的积分项记为<span class="math inline">\(Q(\Theta,\Theta^{(t)})\)</span>，称为Q函数</p>
-<ul>
-<li>经过这一系列的迭代，每一步选取的<span class="math inline">\(\Theta\)</span>都使下界<span class="math inline">\(B(\Theta,\Theta^{(t)})\)</span>得到增大，迫使对数似然函数也被增大。再由单调有界原理可以证明EM算法将会收敛到一个局部极大值点。</li>
-</ul>
-<p>如果将积分项写成数学期望，则迭代公式还可写作 <span class="math display">\[
-\Theta^{(t+1)} = \arg\max_{\Theta} \mathbb{E}_{\mathbf{z|\mathbf{x};\Theta^{t}}} [lnp(\mathbf{x},\mathbf{z};\Theta)]
-\]</span> 总结一下，EM算法分为E步（求期望步）和M步（最大化步）：</p>
-<ol type="1">
-<li>使用当前步估计的参数<span class="math inline">\(\Theta^{(t)}\)</span>，求对数似然函数关于<span class="math inline">\(\mathbf{z}\)</span>的期望<span class="math inline">\(\mathbb{E}_{\mathbf{z|\mathbf{x};\Theta^{t}}} [lnp(\mathbf{x},\mathbf{z};\Theta)]\)</span></li>
-<li>最大化对数似然函数的期望，求得参数<span class="math inline">\(\Theta^{(t+1)}\)</span>作为下一步迭代的参数</li>
-</ol>
-<h3 id="em算法的收敛性">EM算法的收敛性</h3>
-<p>正如前文所言，EM算法的迭代使对数似然的下界<span class="math inline">\(B(\Theta,\Theta^{(t)})\)</span>不断增大，从而迫使对数似然增大。因此只需要证明<span class="math inline">\(lnp(\mathbf{x};\Theta^{(t)})\)</span>关于迭代次数<span class="math inline">\(t\)</span>单调递增，再用单调有界原理即可证明算法收敛。</p>
-<p>下面证明<span class="math inline">\(lnp(\mathbf{x};\Theta^{(t)})\)</span>单调递增： <span class="math display">\[
-lnp(\mathbf{x};\Theta) = lnp(\mathbf{x},\mathbf{z};\Theta) - lnp(\mathbf{z}|\mathbf{x};\Theta)
-\]</span> 两边对概率分布<span class="math inline">\(p(\mathbf{z}|\mathbf{x};\Theta^{(t)})\)</span>取期望，注意到<span class="math inline">\(lnp(\mathbf{x};\Theta)\)</span>和<span class="math inline">\(\mathbf{z}\)</span>无关 <span class="math display">\[
-lnp(\mathbf{x};\Theta)
-= \int_\mathbf{z} lnp(\mathbf{x},\mathbf{z};\Theta) p(\mathbf{z}|\mathbf{x};\Theta^{(t)}) d\mathbf{z} - \int_\mathbf{z} lnp(\mathbf{z}|\mathbf{x};\Theta) p(\mathbf{z}|\mathbf{x};\Theta^{(t)}) d\mathbf{z}
-\]</span> 等式右边第一项就是<span class="math inline">\(Q(\Theta, \Theta^{(t)})\)</span>，第二项我们记为<span class="math inline">\(H(\Theta, \Theta^{(t)})\)</span></p>
-<p>作差比大小： <span class="math display">\[
-lnp(\mathbf{x};\Theta^{(t+1)}) - lnp(\mathbf{x};\Theta^{(t)}) = [Q(\Theta^{(t+1)},\Theta^{(t)}) - Q(\Theta^{(t)},\Theta^{(t)})] + [H(\Theta^{(t)},\Theta^{(t)}) - H(\Theta^{(t+1)}, \Theta^{(t)})]
-\]</span> 因为<span class="math inline">\(\Theta^{(t+1)} = \arg\max_\Theta Q(\Theta, \Theta^{(t)})\)</span>，自然有<span class="math inline">\(Q(\Theta^{(t+1)},\Theta^{(t)}) \ge Q(\Theta^{(t)},\Theta^{(t)})\)</span>，所以等号右边第一项非负</p>
-<p>再来看右边第二项 <span class="math display">\[
-H(\Theta^{(t)},\Theta^{(t)}) - H(\Theta^{(t+1)}, \Theta^{(t)}) = -\int_{\mathbf{z}} ln\frac{p(\mathbf{z}|\mathbf{x};\Theta^{(t+1)})}{p(\mathbf{z}|\mathbf{x};\Theta^{(t)})} p(\mathbf{z}|\mathbf{x};\Theta^{(t)}) d\mathbf{z} \\
-\ge -ln\int_{\mathbf{z}} \frac{p(\mathbf{z}|\mathbf{x};\Theta^{(t+1)})}{p(\mathbf{z}|\mathbf{x};\Theta^{(t)})} p(\mathbf{z}|\mathbf{x};\Theta^{(t)}) d\mathbf{z}
-= -ln1 = 0
-\]</span> 这说明第二项也是非负的，所以我们证明了 <span class="math display">\[
-lnp(\mathbf{x};\Theta^{(t+1)}) - lnp(\mathbf{x};\Theta^{(t)}) \ge 0
-\]</span> 再由单调有界原理可知，<span class="math inline">\(lnp(\mathbf{x};\Theta^{(t)})\)</span>最终会收敛到某一值</p>
-<p>更进一步可以证明EM算法得到的参数估计序列<span class="math inline">\(\Theta^{(t)}\)</span>会收敛到某个稳定点<span class="math inline">\(\hat{\Theta}\)</span>，这里不再深入。</p>
-<ul>
-<li>EM算法容易受初值影响，只能收敛到局部极大值点而不能收敛到全局最大值点</li>
-</ul>
-<h2 id="高斯混合模型gmm">高斯混合模型（GMM）</h2>
-<h3 id="用高斯分布对数据集建模">用高斯分布对数据集建模</h3>
-<p>高斯混合模型使用<span class="math inline">\(K\)</span>个高斯分布的加权和对数据集进行建模，认为观测数据分两步生成：</p>
-<ol type="1">
-<li>由离散型随机变量<span class="math inline">\(z\)</span>选择数据属于哪个成分，<span class="math inline">\(z\)</span>的概率分布是<span class="math inline">\(P(z=k)=\alpha_k\)</span>；</li>
-<li>假设选出的是第<span class="math inline">\(k\)</span>个成分，在第<span class="math inline">\(k\)</span>个高斯分布中采样得到一个观测数据，重复<span class="math inline">\(n\)</span>次这样的操作得到整个数据集<span class="math inline">\(\mathbf{x} = \{x_1,..,x_n\}\)</span></li>
-</ol>
-<p>于是整个数据集服从的分布为高斯分布的加权和 <span class="math display">\[
-p_{M}(x;\Theta) = \sum_{z} p(x,z) = \sum_{k=1}^K p(x|z)P(z=k)= \sum_{k=1}^K \alpha_k\phi(x;\mu_k,\sigma_k^2)
-\]</span> 其中<span class="math inline">\(\phi\)</span>是高斯分布的概率密度函数，<span class="math inline">\(\Theta\)</span>是所有参数，即<span class="math inline">\(\Theta = (\mathbf{\alpha},\mathbf{\mu},\mathbf{\sigma^2})\)</span>。<span class="math inline">\(\mu_k,\sigma_k^2\)</span>是第<span class="math inline">\(k\)</span>个高斯分布成分的均值和方差，即 <span class="math display">\[
-\phi(x;\mu_k,\sigma_k^2) = \frac{1}{\sqrt{2\pi}\sigma_k} e^{-\frac{(x-\mu_k)^2}{2\sigma_k^2}}
-\]</span></p>
-<h3 id="用em算法进行参数估计">用EM算法进行参数估计</h3>
-<p>概率分布<span class="math inline">\(p_{M}(x;\Theta)\)</span>中需要估计的参数是<span class="math inline">\(\mathbf{\alpha}=(\alpha_1,...,\alpha_K),\mathbf{\mu}=(\mu_1,...,\mu_K),\mathbf{\sigma^2}=(\sigma_1^2,...,\sigma_K^2)\)</span></p>
-<p>由于随机变量<span class="math inline">\(z\)</span>无法被观测到，只能通过EM算法进行求解：</p>
-<h3 id="e-step">E-Step</h3>
-<p>以下记<span class="math inline">\(\Theta = (\mathbf{\alpha},\mathbf{\mu},\mathbf{\sigma^2}),\Theta^{(t)} = (\mathbf{\mu}^{(t)},\mathbf{\sigma^{(t)}},\mathbf{\alpha^{(t)}})\)</span></p>
-<p>先写出完整数据的似然函数 <span class="math display">\[
-p(\mathbf{x},\mathbf{z};\Theta)
-= \prod_{k=1}^K \prod_{i=1}^n [\alpha_k \phi(x_i;\mu_k,\sigma_k^2)]^{z_{ik}}
-= \prod_{k=1}^K \prod_{i=1}^n [\alpha_k \frac{1}{\sqrt{2\pi}\sigma_k} e^{-\frac{(x_i-\mu_k)^2}{2\sigma_k^2}}]^{z_{ik}}
-\]</span> 这里<span class="math inline">\(z_{ik}\)</span>是0-1随机变量，即示性函数<span class="math inline">\(z_{ik}=\mathbb{I}(z_i=k)\)</span> <span class="math display">\[
-z_{ik}= \begin{cases}
-1,  &amp; z_i =k \\
-0, &amp; z_i \ne k
-\end{cases}
-\]</span> 再写出完整数据的对数似然函数 <span class="math display">\[
-lnp(\mathbf{x},\mathbf{z};\Theta) = \sum_{k=1}^K \sum_{i=1}^n z_{ik}[ln\alpha_k - ln\sqrt{2\pi}-ln\sigma_k -\frac{(x_i-\mu_k)^2}{2\sigma_k^2} ]
-\]</span> 再写出<span class="math inline">\(Q\)</span>函数 <span class="math display">\[
-Q(\Theta,\Theta^{(t)})=
-\mathbb{E}_{\mathbf{z}|\mathbf{x};\Theta^{(t)}}
-[lnp(\mathbf{x},\mathbf{z};\Theta)] \\
-= \sum_{k=1}^K \sum_{i=1}^n \mathbb{E}_{\mathbf{z}|\mathbf{x};\Theta^{(t)}}[z_{ik}][ln\alpha_k - ln\sqrt{2\pi}-ln\sigma_k -\frac{(x_i-\mu_k)^2}{2\sigma_k^2} ]
-\]</span> 为了方便以下叙述，这里先计算<span class="math inline">\(\mathbb{E}_{\mathbf{z}|\mathbf{x};\Theta^{(t)}}[z_{ik}]\)</span> <span class="math display">\[
-\mathbb{E}_{\mathbf{z}|\mathbf{x};\Theta^{(t)}}[z_{ik}] 
-= P(z_i=k|{x_i};\Theta^{(t)}) 
-= \frac{P(z_i=k,x_i;\Theta^{(t)})}{p(x_i;\Theta^{(t)})}
-= \frac{P(z_i=k,x_i;\Theta^{(t)})}{\sum_{k=1}^K P(x_i,z_i=k;\Theta^{(t)})} \\
-= \frac{p(x_i|z_i=k;\Theta^{(t)})P(z_i=k;\Theta^{(t)})}{\sum_{k=1}^K p(x_i|z_i=k;\Theta^{(t)})P(z_i=k;\Theta^{(t)})} = \frac{\alpha_k^{(t)}\phi(x_i;\Theta_k^{(t)})}{\sum_{k=1}^K \alpha_k^{(t)}\phi(x_i;\Theta_k^{(t)}) }
-\]</span></p>
-<h3 id="m-step">M-Step</h3>
-<p>为求解<span class="math inline">\(\Theta^{(t+1)} = \arg\max_{\Theta}Q(\Theta,\Theta^{(t)})\)</span>，只需分别令<span class="math inline">\(Q\)</span>函数对<span class="math inline">\(\mu_k,\sigma_k^2,\alpha_k\)</span>偏导数为0</p>
-<p>求导时需注意到$_{|;^{(t)}}[z_{ik}] <span class="math inline">\(的表达式与\)</span>_k,_k^2,_k$都无关</p>
-<p>先令<span class="math inline">\(Q\)</span>对<span class="math inline">\(\mu_k\)</span>的偏导数为0 <span class="math display">\[
-\frac{\partial Q(\Theta,\Theta^{(t)})}{\partial \mu_k} 
-= \sum_{i=1}^n\mathbb{E}_{\mathbf{z}|\mathbf{x};\Theta^{(t)}}[z_{ik}] \frac{x_i - \mu_k}{\sigma_k^2} = 0
-\]</span> 化简得到 <span class="math display">\[
-\mu_k^{(t+1)} = \frac{\sum_{i=1}^n \mathbb{E}_{\mathbf{z}|\mathbf{x};\Theta^{(t)}}[z_{ik}]x_i}{\sum_{i=1}^n \mathbb{E}_{\mathbf{z}|\mathbf{x};\Theta^{(t)}}[z_{ik}]}
-\]</span></p>
-<p>再令<span class="math inline">\(Q\)</span>对<span class="math inline">\(\sigma_k^2\)</span>的偏导数为0 <span class="math display">\[
-\frac{\partial Q(\Theta,\Theta^{(t)})}{\partial \sigma_k^2} 
-= \sum_{i=1}^n \mathbb{E}_{\mathbf{z}|\mathbf{x};\Theta^{(t)}}[z_{ik}] \frac{(x_i - \mu_k)^2 - \sigma_k^2}{2\sigma_k^4} = 0
-\]</span> 化简得到 <span class="math display">\[
-{\sigma_k^{2}}^{(t+1)} = \frac{\sum_{i=1}^n \mathbb{E}_{\mathbf{z}|\mathbf{x};\Theta^{(t)}}[z_{ik}] (x_i-\mu_k)^2}{\sum_{i=1}^n \mathbb{E}_{\mathbf{z}|\mathbf{x};\Theta^{(t)}}[z_{ik}]}
-\]</span> 最后求解<span class="math inline">\(\alpha_k^{(t+1)}\)</span>，注意需要满足约束条件<span class="math inline">\(\sum_{k=1}^K \alpha_k = 1\)</span>，因此用拉格朗日乘子法求解 <span class="math display">\[
-L = Q(\Theta, \Theta^{(t)}) + \lambda (\sum_{k=1}^K \alpha_k -1)
-\]</span></p>
-<p><span class="math display">\[
-\frac{\partial L}{\partial \alpha_k} = \lambda + \frac{1}{\alpha_k}\sum_{i=1}^n \mathbb{E}_{\mathbf{z}|\mathbf{x};\Theta^{(t)}}[z_{ik}] = 0
-\]</span></p>
-<p>化简得 <span class="math display">\[
-\alpha_k^{(t+1)} = \frac{-\sum_{i=1}^n \mathbb{E}_{\mathbf{z}|\mathbf{x};\Theta^{(t)}}[z_{ik}]}{\lambda}
-\]</span> 加上约束条件<span class="math inline">\(\sum_{k=1}^K \alpha_k = 1\)</span>可得 <span class="math display">\[
--\sum_{k=1}^K \sum_{i=1}^n \mathbb{E}_{\mathbf{z}|\mathbf{x};\Theta^{(t)}}[z_{ik}] = \lambda
-\]</span> 注意到<span class="math inline">\(\sum_{k=1}^K \mathbb{E}_{\mathbf{z}|\mathbf{x};\Theta^{(t)}}[z_{ik}] = 1\)</span>，所以<span class="math inline">\(\lambda = -n\)</span> <span class="math display">\[
-\alpha_k^{(t+1)} = \frac{\sum_{i=1}^n \mathbb{E}_{\mathbf{z}|\mathbf{x};\Theta^{(t)}}[z_{ik}]}{n}
-\]</span> 这样就得到了GMM最终的迭代公式 <span class="math display">\[
-\mathbb{E}_{\mathbf{z}|\mathbf{x};\Theta^{(t)}}[z_{ik}] = \frac{\alpha_k^{(t)}\phi(x_i;\Theta_k^{(t)})}{\sum_{k=1}^K \alpha_k^{(t)}\phi(x_i;\Theta_k^{(t)}) } \\
-\mu_k^{(t+1)} = \frac{\sum_{i=1}^n \mathbb{E}_{\mathbf{z}|\mathbf{x};\Theta^{(t)}}[z_{ik}]x_i}{\sum_{i=1}^n \mathbb{E}_{\mathbf{z}|\mathbf{x};\Theta^{(t)}}[z_{ik}]} \\
-{\sigma_k^{2}}^{(t+1)} = \frac{\sum_{i=1}^n \mathbb{E}_{\mathbf{z}|\mathbf{x};\Theta^{(t)}}[z_{ik}] (x_i-\mu_k)^2}{\sum_{i=1}^n \mathbb{E}_{\mathbf{z}|\mathbf{x};\Theta^{(t)}}[z_{ik}]} \\
-\alpha_k^{(t+1)} = \frac{\sum_{i=1}^n \mathbb{E}_{\mathbf{z}|\mathbf{x};\Theta^{(t)}}[z_{ik}]}{n}
-\]</span> 模型训练结束后可用来进行聚类，数据<span class="math inline">\(x_i\)</span>的类标记 <span class="math display">\[
-\lambda_i = \arg\max_k \mathbb{E}_{\mathbf{z}|\mathbf{x};\hat{\Theta}}[z_{ik}]
-\]</span> 下面是西瓜书给出的高斯混合聚类算法伪代码，和本文记号有一点区别</p>
-<figure>
-<img src="https://i.loli.net/2020/11/10/Fcy3MZePr4wB6za.png" alt="image-20201110174159111" /><figcaption aria-hidden="true">image-20201110174159111</figcaption>
-</figure>
-<h2 id="参考文献">参考文献</h2>
-<p>周志华. <em>机器学习</em>. 北京: 清华大学出版社, 2016. Print.</p>
-<p>李航. <em>统计学习方法（第2版）</em>. 清华大学出版社, 2019. Print.</p>
-<p><a href="https://zhuanlan.zhihu.com/p/67107370">一篇推导比较详细的知乎</a></p>
-<p><a href="https://www.bilibili.com/video/BV1aE411o7qd?p=60">白板推导系列视频</a></p>
-]]></content>
-      <categories>
-        <category>计算机科学</category>
-      </categories>
-      <tags>
-        <tag>机器学习</tag>
-      </tags>
-  </entry>
-  <entry>
     <title>Hamming码</title>
     <url>/2019/04/13/Hamming%E7%A0%81/</url>
     <content><![CDATA[<p>总结一下Hamming距离，奇偶校验码，Hamming码的知识</p>
@@ -396,39 +405,6 @@ L = Q(\Theta, \Theta^{(t)}) + \lambda (\sum_{k=1}^K \alpha_k -1)
       </tags>
   </entry>
   <entry>
-    <title>Knuth-Shuffle算法</title>
-    <url>/2019/09/29/KnuthShuffle/</url>
-    <content><![CDATA[<p>问题描述：现在有n个元素存放在一个数组里，给出一种算法能够生成它们的一个排列，使得生成每种排列的概率相等。</p>
-<blockquote>
-<p>主要参考：《数据结构与算法分析——C语言描述》 Mark Allen Weiss</p>
-</blockquote>
-<a id="more"></a>
-<h1 id="knuth-shuffle算法">Knuth-Shuffle算法</h1>
-<p>不失一般性，可以记这n个元素就是整数1到n，存放在数组<span class="math inline">\(A[0...n-1]\)</span>里。并且假设计算模型里有取随机数的基本操作：</p>
-<figure class="highlight cpp"><table><tr><td class="code"><pre><span class="line"><span class="comment">// 能够以相等概率随机返回一个范围在[i,j]的整数</span></span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">randint</span><span class="params">(<span class="keyword">int</span> i, <span class="keyword">int</span> j)</span></span>;</span><br></pre></td></tr></table></figure>
-<p>这里直接给出算法的伪代码：</p>
-<figure class="highlight cpp"><table><tr><td class="code"><pre><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">Knuth_Shuffle</span><span class="params">(<span class="keyword">int</span> A[], <span class="keyword">int</span> n)</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">    <span class="keyword">for</span>(<span class="keyword">int</span> i = n - <span class="number">1</span>; i &gt;= <span class="number">0</span>; i--)</span><br><span class="line">        swap(&amp;A[i], &amp;A[randint(<span class="number">0</span>,i)]);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<p>不难分析得到这个算法的时间复杂度是<span class="math inline">\(O(n)\)</span>，空间复杂度如果不计原本的数组则是<span class="math inline">\(O(1)\)</span>的。</p>
-<h1 id="算法正确性的证明">算法正确性的证明</h1>
-<p>首先这个算法涉及的操作就是对<span class="math inline">\(A[0...n-1]\)</span>里的元素进行<code>swap()</code>，最后得到的当然是这n个元素的一个排列。</p>
-<p>记任意一个排列为<span class="math inline">\(a_0,a_1,...a_{n-1}\)</span>，为了得到这个排列，算法必须第一步用元素<span class="math inline">\(A[n-1]\)</span>和元素<span class="math inline">\(a_{n-1}\)</span>交换，实现这一步的概率显然是<span class="math inline">\(\frac{1}{n}\)</span>；第二步必须用元素<span class="math inline">\(a_{n-2}\)</span>和元素<span class="math inline">\(A[n-2]\)</span>交换，而这一步实际上是一个条件概率<span class="math inline">\(\frac{1}{n-1}\)</span>；以此类推，第k步必须用元素<span class="math inline">\(a_{n-k}\)</span>和元素<span class="math inline">\(A[n-k]\)</span>交换。</p>
-<p>设事件<span class="math inline">\(E_k\)</span>为算法的第k次迭代时用元素<span class="math inline">\(a_{n-k}\)</span>和元素<span class="math inline">\(A[n-k]\)</span>交换，则生成排列<span class="math inline">\(a_0,a_1,...a_{n-1}\)</span>就是事件<span class="math inline">\(\prod_{k=0}^{n-1} E_k\)</span>。展开一下就有</p>
-<p><span class="math display">\[P\{\prod_{k=0}^{n-1} E_k\} = P\{E_k\}P\{E_{k-1}|E_{k}\}...P\{E_{0}|E_{k}E_{k-1}...E_{1}\}\]</span></p>
-<p>根据上面的分析不难发现这个结果就是<span class="math inline">\(\frac{1}{n!}\)</span>，所以每种排列生成的概率是一样的。</p>
-<h1 id="其他">其他</h1>
-<p>在《数据结构与算法分析——C语言描述》中译本P27给出的算法其实是</p>
-<figure class="highlight cpp"><table><tr><td class="code"><pre><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">Knuth_Shuffle</span><span class="params">(<span class="keyword">int</span> A[], <span class="keyword">int</span> n)</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">    <span class="keyword">for</span>(<span class="keyword">int</span> i = <span class="number">1</span>; i &lt; n; i++)</span><br><span class="line">        swap(&amp;A[i], &amp;A[randint(<span class="number">0</span>,i)]);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<p>和最开头给出的有一点点区别，但不难证明结论是一样的。</p>
-<p><em>(Hint:从最后一次迭代往前分析即可)</em></p>
-]]></content>
-      <categories>
-        <category>计算机科学</category>
-      </categories>
-      <tags>
-        <tag>算法</tag>
-      </tags>
-  </entry>
-  <entry>
     <title>匈牙利算法</title>
     <url>/2020/03/22/Hungary/</url>
     <content><![CDATA[<h1 id="匈牙利算法">匈牙利算法</h1>
@@ -477,6 +453,39 @@ L = Q(\Theta, \Theta^{(t)}) + \lambda (\sum_{k=1}^K \alpha_k -1)
 <p><a href="https://www.cnblogs.com/shenben/p/5573788.html">https://www.cnblogs.com/shenben/p/5573788.html</a></p>
 <p><a href="https://blog.csdn.net/zxn0803/article/details/49995973">https://blog.csdn.net/zxn0803/article/details/49995973</a></p>
 <p><a href="https://blog.csdn.net/sixdaycoder/article/details/47680831">https://blog.csdn.net/sixdaycoder/article/details/47680831</a></p>
+]]></content>
+      <categories>
+        <category>计算机科学</category>
+      </categories>
+      <tags>
+        <tag>算法</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>Knuth-Shuffle算法</title>
+    <url>/2019/09/29/KnuthShuffle/</url>
+    <content><![CDATA[<p>问题描述：现在有n个元素存放在一个数组里，给出一种算法能够生成它们的一个排列，使得生成每种排列的概率相等。</p>
+<blockquote>
+<p>主要参考：《数据结构与算法分析——C语言描述》 Mark Allen Weiss</p>
+</blockquote>
+<a id="more"></a>
+<h1 id="knuth-shuffle算法">Knuth-Shuffle算法</h1>
+<p>不失一般性，可以记这n个元素就是整数1到n，存放在数组<span class="math inline">\(A[0...n-1]\)</span>里。并且假设计算模型里有取随机数的基本操作：</p>
+<figure class="highlight cpp"><table><tr><td class="code"><pre><span class="line"><span class="comment">// 能够以相等概率随机返回一个范围在[i,j]的整数</span></span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">randint</span><span class="params">(<span class="keyword">int</span> i, <span class="keyword">int</span> j)</span></span>;</span><br></pre></td></tr></table></figure>
+<p>这里直接给出算法的伪代码：</p>
+<figure class="highlight cpp"><table><tr><td class="code"><pre><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">Knuth_Shuffle</span><span class="params">(<span class="keyword">int</span> A[], <span class="keyword">int</span> n)</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">    <span class="keyword">for</span>(<span class="keyword">int</span> i = n - <span class="number">1</span>; i &gt;= <span class="number">0</span>; i--)</span><br><span class="line">        swap(&amp;A[i], &amp;A[randint(<span class="number">0</span>,i)]);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>不难分析得到这个算法的时间复杂度是<span class="math inline">\(O(n)\)</span>，空间复杂度如果不计原本的数组则是<span class="math inline">\(O(1)\)</span>的。</p>
+<h1 id="算法正确性的证明">算法正确性的证明</h1>
+<p>首先这个算法涉及的操作就是对<span class="math inline">\(A[0...n-1]\)</span>里的元素进行<code>swap()</code>，最后得到的当然是这n个元素的一个排列。</p>
+<p>记任意一个排列为<span class="math inline">\(a_0,a_1,...a_{n-1}\)</span>，为了得到这个排列，算法必须第一步用元素<span class="math inline">\(A[n-1]\)</span>和元素<span class="math inline">\(a_{n-1}\)</span>交换，实现这一步的概率显然是<span class="math inline">\(\frac{1}{n}\)</span>；第二步必须用元素<span class="math inline">\(a_{n-2}\)</span>和元素<span class="math inline">\(A[n-2]\)</span>交换，而这一步实际上是一个条件概率<span class="math inline">\(\frac{1}{n-1}\)</span>；以此类推，第k步必须用元素<span class="math inline">\(a_{n-k}\)</span>和元素<span class="math inline">\(A[n-k]\)</span>交换。</p>
+<p>设事件<span class="math inline">\(E_k\)</span>为算法的第k次迭代时用元素<span class="math inline">\(a_{n-k}\)</span>和元素<span class="math inline">\(A[n-k]\)</span>交换，则生成排列<span class="math inline">\(a_0,a_1,...a_{n-1}\)</span>就是事件<span class="math inline">\(\prod_{k=0}^{n-1} E_k\)</span>。展开一下就有</p>
+<p><span class="math display">\[P\{\prod_{k=0}^{n-1} E_k\} = P\{E_k\}P\{E_{k-1}|E_{k}\}...P\{E_{0}|E_{k}E_{k-1}...E_{1}\}\]</span></p>
+<p>根据上面的分析不难发现这个结果就是<span class="math inline">\(\frac{1}{n!}\)</span>，所以每种排列生成的概率是一样的。</p>
+<h1 id="其他">其他</h1>
+<p>在《数据结构与算法分析——C语言描述》中译本P27给出的算法其实是</p>
+<figure class="highlight cpp"><table><tr><td class="code"><pre><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">Knuth_Shuffle</span><span class="params">(<span class="keyword">int</span> A[], <span class="keyword">int</span> n)</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">    <span class="keyword">for</span>(<span class="keyword">int</span> i = <span class="number">1</span>; i &lt; n; i++)</span><br><span class="line">        swap(&amp;A[i], &amp;A[randint(<span class="number">0</span>,i)]);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>和最开头给出的有一点点区别，但不难证明结论是一样的。</p>
+<p><em>(Hint:从最后一次迭代往前分析即可)</em></p>
 ]]></content>
       <categories>
         <category>计算机科学</category>
@@ -748,69 +757,6 @@ int main() &#123;
       </tags>
   </entry>
   <entry>
-    <title>Testing Markdown with Hexo</title>
-    <url>/2019/04/03/hello-world/</url>
-    <content><![CDATA[<blockquote>
-<p>这里用来测试read more功能 成功</p>
-</blockquote>
-<a id="more"></a>
-<h1 id="markdown常用语法">Markdown常用语法</h1>
-<h2 id="无序列表">无序列表</h2>
-<ul>
-<li>文本1</li>
-<li>文本2</li>
-<li>文本3</li>
-</ul>
-<h2 id="有序列表">有序列表</h2>
-<ol type="1">
-<li>文本1</li>
-<li>文本2</li>
-<li>文本3</li>
-</ol>
-<h2 id="插入图片和链接">插入图片和链接</h2>
-<p><a href="https://piggerzzm.github.io">My website</a> <img src="/images/ZZM.jpg" width="500" hegiht="313" align=center /></p>
-<h2 id="引用">引用</h2>
-<blockquote>
-<p>天涯何处无芳草，何必要在大学找。</p>
-</blockquote>
-<p>引用书上的句子</p>
-<blockquote><p>Do not just seek happiness for yourself. Seek happiness for all. Through kindness. Through mercy.</p>
-<footer><strong>David Levithan</strong><cite>Wide Awake</cite></footer></blockquote>
-<p>引用网站</p>
-<blockquote><p>Every interaction is both precious and an opportunity to delight.</p>
-<footer><strong>Seth Godin</strong><cite><a href="http://sethgodin.typepad.com/seths_blog/2009/07/welcome-to-island-marketing.html">Welcome to Island Marketing</a></cite></footer></blockquote>
-<h2 id="斜体和粗体">斜体和粗体</h2>
-<p><em>斜体</em> <strong>粗体</strong></p>
-<h2 id="to-do-list">To-do List</h2>
-<ul class="task-list">
-<li><input type="checkbox" disabled="" checked="" />
-已完成项目1<ul class="task-list">
-<li><input type="checkbox" disabled="" checked="" />
-已完成事项</li>
-<li><input type="checkbox" disabled="" />
-代办事项</li>
-</ul></li>
-<li><input type="checkbox" disabled="" />
-代办项目2</li>
-<li><input type="checkbox" disabled="" />
-代办项目3</li>
-</ul>
-<h2 id="代码块">代码块</h2>
-<p>这是一段C代码：</p>
-<figure class="highlight cpp"><table><tr><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;stdio.h&gt;</span></span></span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">main</span><span class="params">()</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">    <span class="built_in">printf</span>(<span class="string">&quot;Hello world\n&quot;</span>);</span><br><span class="line">    <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<figure class="highlight c++"><table><tr><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;stdio.h&gt;</span></span></span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">main</span><span class="params">()</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">    <span class="built_in">printf</span>(<span class="string">&quot;Hello world\n&quot;</span>);</span><br><span class="line">    <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<h2 id="newton-leibniz公式">Newton-Leibniz公式</h2>
-<h3 id="行内">行内</h3>
-<p>$ _a^bf'(x)dx=f(b)-f(a) $ ### 单独显示 <span class="math display">\[ \int_a^bf&#39;(x)dx=f(b)-f(a) \]</span></p>
-]]></content>
-      <categories>
-        <category>Test</category>
-      </categories>
-      <tags>
-        <tag>Test</tag>
-      </tags>
-  </entry>
-  <entry>
     <title>SEIR模型简介</title>
     <url>/2020/02/01/SEIR/</url>
     <content><![CDATA[<h1 id="背景">背景</h1>
@@ -880,6 +826,69 @@ P(Y&gt;t)=P(X=0,t)=e^{-\alpha t}
       </categories>
       <tags>
         <tag>数学模型、预测、微分方程</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>Testing Markdown with Hexo</title>
+    <url>/2019/04/03/hello-world/</url>
+    <content><![CDATA[<blockquote>
+<p>这里用来测试read more功能 成功</p>
+</blockquote>
+<a id="more"></a>
+<h1 id="markdown常用语法">Markdown常用语法</h1>
+<h2 id="无序列表">无序列表</h2>
+<ul>
+<li>文本1</li>
+<li>文本2</li>
+<li>文本3</li>
+</ul>
+<h2 id="有序列表">有序列表</h2>
+<ol type="1">
+<li>文本1</li>
+<li>文本2</li>
+<li>文本3</li>
+</ol>
+<h2 id="插入图片和链接">插入图片和链接</h2>
+<p><a href="https://piggerzzm.github.io">My website</a> <img src="/images/ZZM.jpg" width="500" hegiht="313" align=center /></p>
+<h2 id="引用">引用</h2>
+<blockquote>
+<p>天涯何处无芳草，何必要在大学找。</p>
+</blockquote>
+<p>引用书上的句子</p>
+<blockquote><p>Do not just seek happiness for yourself. Seek happiness for all. Through kindness. Through mercy.</p>
+<footer><strong>David Levithan</strong><cite>Wide Awake</cite></footer></blockquote>
+<p>引用网站</p>
+<blockquote><p>Every interaction is both precious and an opportunity to delight.</p>
+<footer><strong>Seth Godin</strong><cite><a href="http://sethgodin.typepad.com/seths_blog/2009/07/welcome-to-island-marketing.html">Welcome to Island Marketing</a></cite></footer></blockquote>
+<h2 id="斜体和粗体">斜体和粗体</h2>
+<p><em>斜体</em> <strong>粗体</strong></p>
+<h2 id="to-do-list">To-do List</h2>
+<ul class="task-list">
+<li><input type="checkbox" disabled="" checked="" />
+已完成项目1<ul class="task-list">
+<li><input type="checkbox" disabled="" checked="" />
+已完成事项</li>
+<li><input type="checkbox" disabled="" />
+代办事项</li>
+</ul></li>
+<li><input type="checkbox" disabled="" />
+代办项目2</li>
+<li><input type="checkbox" disabled="" />
+代办项目3</li>
+</ul>
+<h2 id="代码块">代码块</h2>
+<p>这是一段C代码：</p>
+<figure class="highlight cpp"><table><tr><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;stdio.h&gt;</span></span></span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">main</span><span class="params">()</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">    <span class="built_in">printf</span>(<span class="string">&quot;Hello world\n&quot;</span>);</span><br><span class="line">    <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<figure class="highlight c++"><table><tr><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;stdio.h&gt;</span></span></span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">main</span><span class="params">()</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">    <span class="built_in">printf</span>(<span class="string">&quot;Hello world\n&quot;</span>);</span><br><span class="line">    <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h2 id="newton-leibniz公式">Newton-Leibniz公式</h2>
+<h3 id="行内">行内</h3>
+<p>$ _a^bf'(x)dx=f(b)-f(a) $ ### 单独显示 <span class="math display">\[ \int_a^bf&#39;(x)dx=f(b)-f(a) \]</span></p>
+]]></content>
+      <categories>
+        <category>Test</category>
+      </categories>
+      <tags>
+        <tag>Test</tag>
       </tags>
   </entry>
   <entry>
