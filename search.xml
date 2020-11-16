@@ -155,39 +155,43 @@ h_t(\boldsymbol{x}) = \arg \min_h \mathbb{E}_{\boldsymbol{x} \sim \mathcal{D}_t}
     <title>EM算法和高斯混合模型</title>
     <url>/2020/11/09/EM%E5%92%8CGMM/</url>
     <content><![CDATA[<h1 id="em算法和高斯混合模型">EM算法和高斯混合模型</h1>
-<p>《统计学习方法》对EM算法和GMM的介绍都比较详细，但有不少地方绕弯路，而且记号稍显混乱；《西瓜书》对EM算法和HMM的介绍都非常简洁，有许多细节被略去；B站上的白板推导系列里也有EM算法和GMM详细推导。</p>
+<p>《统计学习方法》对EM算法和GMM的介绍都比较详细，但有不少地方绕弯路，而且记号稍显混乱；《西瓜书》对EM算法和GMM的介绍都非常简洁，有许多细节被略去；B站上的白板推导系列里也有EM算法和GMM详细推导。</p>
 <p>为了这次数据挖掘小组作业，在这里整理一下EM和GMM。</p>
 <a id="more"></a>
 <h2 id="em算法">EM算法</h2>
 <p>EM算法是解决含有隐变量情况下的极大似然估计算法</p>
 <h3 id="极大似然估计">极大似然估计</h3>
-<p>已知数据集<span class="math inline">\(\mathbf{x} = (x_1,...,x_n)\)</span>，先验分布为<span class="math inline">\(p(x;\Theta)\)</span>。在有独立同分布的假设下容易写出联合概率分布<span class="math inline">\(p(\mathbf{x};\Theta)\)</span>，对参数<span class="math inline">\(\Theta\)</span>的极大似然估计化归为求解如下问题 <span class="math display">\[
+<p>已知独立同分布数据集<span class="math inline">\(X = \{x_1,...,x_n\}\)</span>，即<span class="math inline">\(X\stackrel{\text{i.i.d}}{\sim}p(x;\Theta)\)</span>。它们的联合概率密度记为<span class="math inline">\(p(\mathbf{x};\Theta)\)</span>，其中<span class="math inline">\(\mathbf{x}=(x_1,...,x_n)\)</span>。对参数<span class="math inline">\(\Theta\)</span>的极大似然估计化归为求解如下问题 <span class="math display">\[
 \hat{\Theta}_{MLE} = \arg\max_{\theta} ln p(\mathbf{x};\Theta) = \arg\max_{\theta} \sum_{i=1}^n ln p(x_i;\Theta)
-\]</span> 当含有隐变量<span class="math inline">\(z\)</span>时，MLE变为求解如下问题 <span class="math display">\[
+\]</span> 如果含有隐变量<span class="math inline">\(z \stackrel{\text{i.i.d}}{\sim}q(z;\Theta)\)</span>，隐含数据集记为<span class="math inline">\(Z = \{z_1,...,z_n\}\)</span>，它们的联合概率密度记为<span class="math inline">\(q(\mathbf{z};\Theta)\)</span>，其中<span class="math inline">\(\mathbf{z}=(z_1,...,z_n)\)</span>，此时MLE变为求解如下问题 <span class="math display">\[
 \begin{gather*}
 \hat{\Theta}_{MLE} = \arg\max_{\Theta} ln p(\mathbf{x};\Theta) = \arg\max_{\Theta} ln\int_{\mathbf{z}} p(\mathbf{x},\mathbf{z};\Theta) d\mathbf{z} \\
 = \arg\max_{\Theta} ln \int_\mathbf{z} p(\mathbf{z};\Theta) p(\mathbf{x}|\mathbf{z};\Theta) d\mathbf{z}
 =\arg\max_{\Theta} \int_\mathbf{z} p(\mathbf{z};\Theta) p(\mathbf{x}|\mathbf{z};\Theta) d\mathbf{z} \\
 \end{gather*}
-\]</span> 因数据集<span class="math inline">\(\mathbf{z} = (z_1,...,z_n)\)</span>无法观测到，<span class="math inline">\(p(\mathbf{z};\Theta)\)</span>无法计算，难以求解上述问题</p>
+\]</span> 因隐含数据集<span class="math inline">\(Z = \{z_1,...,z_n\}\)</span>无法观测到，联合概率密度<span class="math inline">\(p(\mathbf{z};\Theta)\)</span>无法计算，无法求解上述问题</p>
 <h3 id="对数似然函数的下界">对数似然函数的下界</h3>
-<p>在有隐变量<span class="math inline">\(z\)</span>的情况下，为了最大化<span class="math inline">\(ln p(\mathbf{x};\Theta)\)</span>，先对式子做一些变形。假设<span class="math inline">\(q(\mathbf{z})\)</span>是另一个概率分布 <span class="math display">\[
-ln p(\mathbf{x};\Theta) = lnp(\mathbf{x},\mathbf{z};\Theta) - lnp(\mathbf{z}|\mathbf{x};\Theta)
-= ln \frac{p(\mathbf{x},\mathbf{z};\Theta)}{q(\mathbf{z})} - ln \frac{p(\mathbf{z}|\mathbf{x};\Theta)}{q(\mathbf{z})}
-\]</span> 然后将等式两边分别对<span class="math inline">\(q(\mathbf{z})\)</span>取数学期望 <span class="math display">\[
-左式求期望 = \int_{\mathbf{z}} ln p(\mathbf{x};\Theta) q(\mathbf{z}) d\mathbf{z} = ln p(\mathbf{x};\Theta) = 左式
-\]</span> 这是因为<span class="math inline">\(lnp(\mathbf{x};\Theta)\)</span>与<span class="math inline">\(\mathbf{z}\)</span>无关可提到外面，这说明左边求期望后还是左式本身 <span class="math display">\[
-lnp(\mathbf{x};\Theta) = 右式求期望 = \int_{\mathbf{z}} ln\frac{p(\mathbf{x},\mathbf{z};\Theta)}{q(\mathbf{z})}q(\mathbf{z}) d\mathbf{z} - \int_{\mathbf{z}} ln \frac{p(\mathbf{z}|\mathbf{x};\Theta)}{q(\mathbf{z})} q(\mathbf{z})d\mathbf{z}
-\]</span> 这里可以发现后一项就是相对熵 <span class="math display">\[
-KL(q(\mathbf{z})||p(\mathbf{z}|\mathbf{x};\Theta)) = - \int_{\mathbf{z}} ln \frac{p(\mathbf{z}|\mathbf{x};\Theta)}{q(\mathbf{z})} q(\mathbf{z})d\mathbf{z} \ge 0
-\]</span> 由于相对熵非负，前一项就是对数似然<span class="math inline">\(ln p(\mathbf{x};\Theta)\)</span>的下界</p>
-<p><span class="math display">\[
+<p>在有隐变量<span class="math inline">\(Z\)</span>的情况下，为了最大化对数似然函数<span class="math inline">\(ln p(\mathbf{x};\Theta)\)</span>，先对它做一些变形</p>
+<p>假设<span class="math inline">\(q(z)\)</span>是隐变量<span class="math inline">\(Z\)</span>服从的概率分布，<span class="math inline">\(q(\mathbf{z})\)</span>是对应的联合概率密度，则有 <span class="math display">\[
+lnp(\mathbf{x};\Theta) = ln\int_{\mathbf{z}} p(\mathbf{x},\mathbf{z};\Theta) d\mathbf{z} = ln\int_{\mathbf{z}}\frac{p(\mathbf{x},\mathbf{z};\Theta)}{q(\mathbf{z})}q(\mathbf{z}) d\mathbf{z}
+\]</span> 然后用Jensen不等式进行放缩 <span class="math display">\[
+lnp(\mathbf{x};\Theta) = ln\int_{\mathbf{z}}\frac{p(\mathbf{x},\mathbf{z};\Theta)}{q(\mathbf{z})}q(\mathbf{z}) d\mathbf{z} \ge
+\int_{\mathbf{z}} ln\frac{p(\mathbf{x},\mathbf{z};\Theta)}{q(\mathbf{z})} q(\mathbf{z}) d\mathbf{z}
+\]</span> 这就得到了对数似然函数<span class="math inline">\(ln p(\mathbf{x};\Theta)\)</span>的下界 <span class="math display">\[
 ln p(\mathbf{x};\Theta) \ge \int_{\mathbf{z}} ln\frac{p(\mathbf{x},\mathbf{z};\Theta)}{q(\mathbf{z})}q(\mathbf{z}) d\mathbf{z}
 \]</span></p>
+<p>由Jensen不等式的性质知，等号成立当且仅当 <span class="math display">\[
+p(\mathbf{x}, \mathbf{z};\Theta) = Cq(\mathbf{z})
+\]</span> 两边对<span class="math inline">\(\mathbf{z}\)</span>积分可得 <span class="math display">\[
+\int_{\mathbf{z}} p(\mathbf{x},\mathbf{z};\Theta) d\mathbf{z} = C \int_{\mathbf{z}} q(\mathbf{z}) d\mathbf{z}
+\]</span> 因为<span class="math inline">\(q(\mathbf{z})\)</span>是概率密度函数，积分是1；<span class="math inline">\(p(\mathbf{x},\mathbf{z};\Theta)\)</span>对<span class="math inline">\(\mathbf{z}\)</span>积分是边缘概率密度<span class="math inline">\(p(\mathbf{x};\Theta)\)</span>。由此可知<span class="math inline">\(C=p(\mathbf{x};\Theta)\)</span>，所以 <span class="math display">\[
+q(\mathbf{z}) = \frac{p(\mathbf{x},\mathbf{z};\Theta)}{C} = \frac{p(\mathbf{x},\mathbf{z};\Theta)}{p(\mathbf{x};\Theta)} = p(\mathbf{z}|\mathbf{x};\Theta)
+\]</span> 即<span class="math inline">\(q(\mathbf{z})\)</span>是观测到数据集<span class="math inline">\(\mathbf{x}\)</span>后的后验分布。这也启发了EM算法选取<span class="math inline">\(q(\mathbf{z})\)</span>的原因。</p>
 <h3 id="em算法的导出">EM算法的导出</h3>
-<p>EM算法把第<span class="math inline">\(t\)</span>步迭代时关于<span class="math inline">\(\mathbf{z}\)</span>的后验分布作为<span class="math inline">\(q(\mathbf{z})\)</span>，即令<span class="math inline">\(q(\mathbf{z}) = p(\mathbf{z}|\mathbf{x};\Theta^{(t)})\)</span>，这样就得到了第<span class="math inline">\(t\)</span>步迭代时对数似然的下界记为<span class="math inline">\(B(\Theta,\Theta^{(t)})\)</span> <span class="math display">\[
+<p>我们把真实参数记为<span class="math inline">\(\Theta\)</span>，EM算法第<span class="math inline">\(t\)</span>步迭代时得到的参数近似值记为<span class="math inline">\(\Theta^{(t)}\)</span></p>
+<p>EM算法把第<span class="math inline">\(t\)</span>步迭代时以当前参数估计值<span class="math inline">\(\Theta^{(t)}\)</span>的<span class="math inline">\(\mathbf{z}\)</span>的后验分布作为<span class="math inline">\(q(\mathbf{z})\)</span>，即<span class="math inline">\(q(\mathbf{z}) = p(\mathbf{z}|\mathbf{x};\Theta^{(t)})\)</span>，这样就得到了第<span class="math inline">\(t\)</span>步迭代时对数似然的下界，记为<span class="math inline">\(B(\Theta,\Theta^{(t)})\)</span> <span class="math display">\[
 ln p(\mathbf{x};\Theta) \ge \int_{\mathbf{z}} ln\frac{p(\mathbf{x},\mathbf{z};\Theta)}{p(\mathbf{z}|\mathbf{x};\Theta^{(t)})}p(\mathbf{z}|\mathbf{x};\Theta^{(t)}) d\mathbf{z} = B(\Theta,\Theta^{(t)})
-\]</span> 为了最大化对数似然函数，EM算法对它的下界<span class="math inline">\(B(\Theta,\Theta^{(t)})\)</span>进行最大化，求解得到的参数作为下一步的参数<span class="math inline">\(\Theta^{(t+1)}\)</span> <span class="math display">\[
+\]</span> 为了最大化对数似然函数，EM算法对它的下界<span class="math inline">\(B(\Theta,\Theta^{(t)})\)</span>进行最大化，求解得到的参数作为下一步迭代的参数<span class="math inline">\(\Theta^{(t+1)}\)</span> <span class="math display">\[
 \Theta^{(t+1)} = \arg\max_{\Theta} B(\Theta,\Theta^{(t)}) = \arg\max_{\Theta} \int_\mathbf{z} ln \frac{p(\mathbf{x},\mathbf{z};\Theta)}{p(\mathbf{z}|\mathbf{x};\Theta^{(t)})} p(\mathbf{z}|\mathbf{x};\Theta^{(t)}) d\mathbf{z}
 \]</span> 展开对数项后，注意到<span class="math inline">\(p(\mathbf{z}|\mathbf{x};\Theta^{(t)})\)</span>关于<span class="math inline">\(\Theta\)</span>是常数，上面的迭代公式可化为 <span class="math display">\[
 \Theta^{(t+1)} = \arg\max_{\Theta} B(\Theta,\Theta^{(t)}) = \arg\max_{\Theta} \int_\mathbf{z} ln p(\mathbf{x},\mathbf{z};\Theta) p(\mathbf{z}|\mathbf{x};\Theta^{(t)}) d\mathbf{z} = \arg\max_{\Theta}Q(\Theta,\Theta^{(t)})
@@ -195,15 +199,20 @@ ln p(\mathbf{x};\Theta) \ge \int_{\mathbf{z}} ln\frac{p(\mathbf{x},\mathbf{z};\T
 <ul>
 <li>经过这一系列的迭代，每一步选取的<span class="math inline">\(\Theta\)</span>都使下界<span class="math inline">\(B(\Theta,\Theta^{(t)})\)</span>得到增大，迫使对数似然函数也被增大。再由单调有界原理可以证明EM算法将会收敛到一个局部极大值点。</li>
 </ul>
+<p>下图是《统计学习方法》的插图，解释了EM算法的迭代过程</p>
+<figure>
+<img src="https://i.loli.net/2020/11/17/sapn9l26yfU4rxN.png" alt="image-20201117023122132" /><figcaption aria-hidden="true">image-20201117023122132</figcaption>
+</figure>
 <p>如果将积分项写成数学期望，则迭代公式还可写作 <span class="math display">\[
 \Theta^{(t+1)} = \arg\max_{\Theta} \mathbb{E}_{\mathbf{z|\mathbf{x};\Theta^{t}}} [lnp(\mathbf{x},\mathbf{z};\Theta)]
-\]</span> 总结一下，EM算法分为E步（求期望步）和M步（最大化步）：</p>
+\]</span> 可以看到这个迭代公式分两步，第一步求期望，第二步求最大化，这也是<strong>EM算法(Expectation-Maximum)</strong>名字的由来</p>
+<p>总结一下，EM算法分为E步（求期望步）和M步（最大化步）：</p>
 <ol type="1">
 <li>使用当前步估计的参数<span class="math inline">\(\Theta^{(t)}\)</span>，求对数似然函数关于<span class="math inline">\(\mathbf{z}\)</span>的期望<span class="math inline">\(\mathbb{E}_{\mathbf{z|\mathbf{x};\Theta^{t}}} [lnp(\mathbf{x},\mathbf{z};\Theta)]\)</span></li>
 <li>最大化对数似然函数的期望，求得参数<span class="math inline">\(\Theta^{(t+1)}\)</span>作为下一步迭代的参数</li>
 </ol>
 <h3 id="em算法的收敛性">EM算法的收敛性</h3>
-<p>正如前文所言，EM算法的迭代使对数似然的下界<span class="math inline">\(B(\Theta,\Theta^{(t)})\)</span>不断增大，从而迫使对数似然增大。因此只需要证明<span class="math inline">\(lnp(\mathbf{x};\Theta^{(t)})\)</span>关于迭代次数<span class="math inline">\(t\)</span>单调递增，再用单调有界原理即可证明算法收敛。</p>
+<p>正如前文所言，EM算法的迭代使对数似然的下界<span class="math inline">\(B(\Theta,\Theta^{(t)})\)</span>不断增大，从而迫使对数似然函数增大。因此只需要证明<span class="math inline">\(lnp(\mathbf{x};\Theta^{(t)})\)</span>关于迭代次数<span class="math inline">\(t\)</span>单调递增，再用单调有界原理即可证明算法收敛。</p>
 <p>下面证明<span class="math inline">\(lnp(\mathbf{x};\Theta^{(t)})\)</span>单调递增： <span class="math display">\[
 lnp(\mathbf{x};\Theta) = lnp(\mathbf{x},\mathbf{z};\Theta) - lnp(\mathbf{z}|\mathbf{x};\Theta)
 \]</span> 两边对概率分布<span class="math inline">\(p(\mathbf{z}|\mathbf{x};\Theta^{(t)})\)</span>取期望，注意到<span class="math inline">\(lnp(\mathbf{x};\Theta)\)</span>和<span class="math inline">\(\mathbf{z}\)</span>无关 <span class="math display">\[
@@ -228,12 +237,12 @@ lnp(\mathbf{x};\Theta^{(t+1)}) - lnp(\mathbf{x};\Theta^{(t)}) \ge 0
 </ul>
 <h2 id="高斯混合模型gmm">高斯混合模型（GMM）</h2>
 <h3 id="用高斯分布对数据集建模">用高斯分布对数据集建模</h3>
-<p>高斯混合模型使用<span class="math inline">\(K\)</span>个高斯分布的加权和对数据集进行建模，认为观测数据分两步生成：</p>
+<p><strong>混合高斯模型(Gaussian Mixture Model)</strong>使用<span class="math inline">\(K\)</span>个高斯分布的加权和对数据集进行建模，认为观测数据分两步生成：</p>
 <ol type="1">
 <li>由离散型随机变量<span class="math inline">\(z\)</span>选择数据属于哪个成分，<span class="math inline">\(z\)</span>的概率分布是<span class="math inline">\(P(z=k)=\alpha_k\)</span>；</li>
 <li>假设选出的是第<span class="math inline">\(k\)</span>个成分，在第<span class="math inline">\(k\)</span>个高斯分布中采样得到一个观测数据，重复<span class="math inline">\(n\)</span>次这样的操作得到整个数据集<span class="math inline">\(\mathbf{x} = \{x_1,..,x_n\}\)</span></li>
 </ol>
-<p>于是整个数据集服从的分布为高斯分布的加权和 <span class="math display">\[
+<p>如果数据的生成过程看作上述两步的话，整个数据集服从的分布就是高斯分布的加权和 <span class="math display">\[
 p_{M}(x;\Theta) = \sum_{z} p(x,z) = \sum_{k=1}^K p(x|z)P(z=k)= \sum_{k=1}^K \alpha_k\phi(x;\mu_k,\sigma_k^2)
 \]</span> 其中<span class="math inline">\(\phi\)</span>是高斯分布的概率密度函数，<span class="math inline">\(\Theta\)</span>是所有参数，即<span class="math inline">\(\Theta = (\mathbf{\alpha},\mathbf{\mu},\mathbf{\sigma^2})\)</span>。<span class="math inline">\(\mu_k,\sigma_k^2\)</span>是第<span class="math inline">\(k\)</span>个高斯分布成分的均值和方差，即 <span class="math display">\[
 \phi(x;\mu_k,\sigma_k^2) = \frac{1}{\sqrt{2\pi}\sigma_k} e^{-\frac{(x-\mu_k)^2}{2\sigma_k^2}}
@@ -243,17 +252,17 @@ p_{M}(x;\Theta) = \sum_{z} p(x,z) = \sum_{k=1}^K p(x|z)P(z=k)= \sum_{k=1}^K \alp
 <p><span class="math inline">\(\mathbf{\alpha}=(\alpha_1,...,\alpha_K),\mathbf{\mu}=(\mu_1,...,\mu_K),\mathbf{\sigma^2}=(\sigma_1^2,...,\sigma_K^2)\)</span></p>
 <p>由于随机变量<span class="math inline">\(z\)</span>无法被观测到，只能通过EM算法进行求解：</p>
 <h3 id="e-step">E-Step</h3>
-<p>以下记<span class="math inline">\(\Theta = (\mathbf{\alpha},\mathbf{\mu},\mathbf{\sigma^2}),\Theta^{(t)} = (\mathbf{\mu}^{(t)},\mathbf{\sigma^{(t)}},\mathbf{\alpha^{(t)}})\)</span></p>
-<p>先写出完整数据的似然函数 <span class="math display">\[
+<p>记概率分布的真实参数<span class="math inline">\(\Theta = (\mathbf{\alpha},\mathbf{\mu},\mathbf{\sigma^2})\)</span>,记算法第<span class="math inline">\(t\)</span>步迭代时估计的参数近似值为<span class="math inline">\(\Theta^{(t)} = (\mathbf{\mu}^{(t)},\mathbf{\sigma^{(t)}},\mathbf{\alpha^{(t)}})\)</span></p>
+<p>先写出完整数据<span class="math inline">\((X,Z)\)</span>的似然函数 <span class="math display">\[
 p(\mathbf{x},\mathbf{z};\Theta)
 = \prod_{k=1}^K \prod_{i=1}^n [\alpha_k \phi(x_i;\mu_k,\sigma_k^2)]^{z_{ik}}
 = \prod_{k=1}^K \prod_{i=1}^n [\alpha_k \frac{1}{\sqrt{2\pi}\sigma_k} e^{-\frac{(x_i-\mu_k)^2}{2\sigma_k^2}}]^{z_{ik}}
-\]</span> 这里<span class="math inline">\(z_{ik}\)</span>是0-1随机变量，即示性函数<span class="math inline">\(z_{ik}=\mathbb{I}(z_i=k)\)</span> <span class="math display">\[
+\]</span> 这里<span class="math inline">\(z_{ik}\)</span>是0-1随机变量，即示性函数<span class="math inline">\(z_{ik}=\mathbb{I}(z_i=k)\)</span>，表示第<span class="math inline">\(i\)</span>个数据<span class="math inline">\(x_i\)</span>是否来自第<span class="math inline">\(k\)</span>个高斯成分 <span class="math display">\[
 z_{ik}= \begin{cases}
 1,  &amp; z_i =k \\
 0, &amp; z_i \ne k
 \end{cases}
-\]</span> 再写出完整数据的对数似然函数 <span class="math display">\[
+\]</span> 再写出完整数据<span class="math inline">\((X,Z)\)</span>的对数似然函数 <span class="math display">\[
 lnp(\mathbf{x},\mathbf{z};\Theta) = \sum_{k=1}^K \sum_{i=1}^n z_{ik}[ln\alpha_k - ln\sqrt{2\pi}-ln\sigma_k -\frac{(x_i-\mu_k)^2}{2\sigma_k^2} ]
 \]</span> 再写出<span class="math inline">\(Q\)</span>函数 <span class="math display">\[
 \begin{gather*}
@@ -304,7 +313,7 @@ L = Q(\Theta, \Theta^{(t)}) + \lambda (\sum_{k=1}^K \alpha_k -1)
 {\sigma_k^{2}}^{(t+1)} = \frac{\sum_{i=1}^n \mathbb{E}_{\mathbf{z}|\mathbf{x};\Theta^{(t)}}[z_{ik}] (x_i-\mu_k)^2}{\sum_{i=1}^n \mathbb{E}_{\mathbf{z}|\mathbf{x};\Theta^{(t)}}[z_{ik}]} \\
 \alpha_k^{(t+1)} = \frac{\sum_{i=1}^n \mathbb{E}_{\mathbf{z}|\mathbf{x};\Theta^{(t)}}[z_{ik}]}{n}
 \end{gather*}
-\]</span> 模型训练结束后可用来进行聚类，数据<span class="math inline">\(x_i\)</span>的类标记 <span class="math display">\[
+\]</span> 模型训练结束后可用来进行聚类，因为<span class="math inline">\(z_{ik}\)</span>是指示数据<span class="math inline">\(x_i\)</span>是否来自于第<span class="math inline">\(k\)</span>个高斯成分的随机变量，可以使用<span class="math inline">\(z_{ik}\)</span>的数学期望作为数据<span class="math inline">\(x_i\)</span>的类标记 <span class="math display">\[
 \lambda_i = \arg\max_k \mathbb{E}_{\mathbf{z}|\mathbf{x};\hat{\Theta}}[z_{ik}]
 \]</span> 下面是西瓜书给出的高斯混合聚类算法伪代码，和本文记号有一点区别</p>
 <p><img src="https://i.loli.net/2020/11/10/Fcy3MZePr4wB6za.png" /></p>
