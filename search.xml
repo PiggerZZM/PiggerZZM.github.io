@@ -1,11 +1,162 @@
 <?xml version="1.0" encoding="utf-8"?>
 <search>
   <entry>
+    <title>AdaBoost小结</title>
+    <url>/2020/06/28/AdaBoost%E5%B0%8F%E7%BB%93/</url>
+    <content><![CDATA[<h1 id="adaboost">AdaBoost</h1>
+<p>总结一下AdaBoost</p>
+<blockquote>
+<p>参考文献：西瓜书，南瓜书，"ADDITIVE LOGISTIC REGRESSION: A STATISTICAL VIEW OF BOOSTING"</p>
+</blockquote>
+<a id="more"></a>
+<h2 id="集成学习">集成学习</h2>
+<p>集成学习（ensemble learning）通过构建多个个体学习器，并将它们结合在一起构成集成学习器来完成学习任务。</p>
+<p>集成学习的两个关键要素就是个体学习器（基学习器）和结合策略。</p>
+<ul>
+<li>假设个体学习器错误率相互独立的前提下，可以证明随着集成数量的增加，集成错误率将以指数级下降并趋于0.</li>
+</ul>
+<p>根据结合策略的不同，目前集成学习的方法可大体分为Boosting和Bagging两大类。</p>
+<h2 id="boosting">Boosting</h2>
+<p>Boosting（提升学习）是一族将弱学习器提升为强学习器的算法，个体学习器之间存在强依赖关系，必须串行生成。</p>
+<p>通常的工作机制是：先训练出一个基学习器，根据基学习器的表现对训练样本的分布进行调整，使先前分类错误的样本在后续得到更多关注，然后基于调整后的分布进行训练下一个基学习器。最后将基学习器进行结合。</p>
+<h2 id="adaboost-1">AdaBoost</h2>
+<p>AdaBoost是Boosting算法里著名的代表，标准的AdaBoost只适用于二分类任务。</p>
+<p>假设训练集为<span class="math inline">\(D = \{(\boldsymbol{x}_1, y_1),...,(\boldsymbol{x}_m, y_m)\}\)</span>，其中<span class="math inline">\(\boldsymbol{x}_i \in \mathbb{R}^n\)</span>，<span class="math inline">\(y_i \in \{-1, +1\}\)</span>为样本的类标记。假设训练集<span class="math inline">\(D\)</span>里的样本服从某个分布<span class="math inline">\(\mathcal{D}\)</span>，即<span class="math inline">\(\boldsymbol{x} \sim \mathcal{D}\)</span>。</p>
+<p>第<span class="math inline">\(t\)</span>轮训练的基分类器记为<span class="math inline">\(h_t(\boldsymbol{x})\)</span>，基分类器的加权和记为<span class="math inline">\(H(\boldsymbol{x})\)</span>，最终的集成分类器记为<span class="math inline">\(F(\boldsymbol{x})\)</span></p>
+<p><img src="/images/AdaBoost.png" width="500" hegiht="313" align=center /></p>
+<ul>
+<li>AdaBoost算法需要详细解释的地方有两处：①基分类器<span class="math inline">\(h_t\)</span>的权重为何采用第6行的公式来计算②样本分布为何采用第7行的公式来更新</li>
+</ul>
+<h3 id="adaboost的损失函数指数损失">AdaBoost的损失函数——指数损失</h3>
+<p>根据西瓜书的推导方法，AdaBoost采用的损失函数为指数损失函数：</p>
+<p><span class="math display">\[
+l_{exp}(H|\mathcal{D}) = \mathbb{E}_{\boldsymbol{x} \sim \mathcal{D}}[e^{-yH(\boldsymbol{x})}]
+\]</span></p>
+<p>其中<span class="math inline">\(H(\boldsymbol{x})\)</span>是基分类器的加权和，<span class="math inline">\(y\)</span>是样本的类标记。</p>
+<p><span class="math display">\[
+H(\boldsymbol{x}) = \sum_{t=1}^T \alpha_t h_t(\boldsymbol{x})
+\]</span></p>
+<h3 id="贝叶斯最优错误率">贝叶斯最优错误率</h3>
+<ul>
+<li>最小化指数损失将使最终的集成分类器<span class="math inline">\(F(\boldsymbol{x})\)</span>满足<strong>贝叶斯最优错误率</strong>：</li>
+</ul>
+<p><span class="math display">\[
+F(\boldsymbol{x}) = \arg\max_y P(f(\boldsymbol{x})=y|\boldsymbol{x})
+\]</span></p>
+<p>当指数损失得到最小化时，对应的条件期望 <span class="math inline">\(\mathbb{E}_{\boldsymbol{x} \sim \mathcal{D}}[e^{-yH(\boldsymbol{x})}|\boldsymbol{x}]\)</span> 也一定得到最小化。</p>
+<p><span class="math display">\[
+\mathbb{E}_{\boldsymbol{x} \sim \mathcal{D}}[e^{-yH(\boldsymbol{x})}|\boldsymbol{x}] = e^{-H(\boldsymbol{x})} P(y=1|\boldsymbol{x}) + e^{H(\boldsymbol{x})} P(y=-1|\boldsymbol{x})
+\]</span></p>
+<p>此时条件期望对<span class="math inline">\(H(\boldsymbol{x})\)</span>的偏导数为0：</p>
+<p><span class="math display">\[
+\frac{\partial \mathbb{E}_{\boldsymbol{x} \sim \mathcal{D}}[e^{-yH(\boldsymbol{x})}|\boldsymbol{x}]}{\partial H(\boldsymbol{x})} = -e^{-H(\boldsymbol{x})} P(y=1|\boldsymbol{x}) + e^{H(\boldsymbol{x})}P(y=-1|\boldsymbol{x}) = 0
+\]</span></p>
+<p>解得</p>
+<p><span class="math display">\[
+H(\boldsymbol{x}) = \frac{1}{2} ln\frac{P(y=1|\boldsymbol{x})}{P(y=-1|\boldsymbol{x})}
+\]</span></p>
+<p>因此有</p>
+<p><span class="math display">\[
+F(\boldsymbol{x}) = sign(H(\boldsymbol{x})) = sign(ln\frac{P(y=1|\boldsymbol{x})}{P(y=-1|\boldsymbol{x})}) 
+= \begin{cases}
+1,  &amp; P(y=1|\boldsymbol{x}) &gt; P(y=-1|\boldsymbol{x}) \\
+-1, &amp; P(y=1|\boldsymbol{x}) &lt; P(y=-1|\boldsymbol{x})
+\end{cases} \\
+= \arg\max_y P(f(\boldsymbol{x})=y|\boldsymbol{x})
+\]</span></p>
+<h3 id="基分类器权重公式">基分类器权重公式</h3>
+<ul>
+<li>权重<span class="math inline">\(\alpha_t\)</span>应最小化带权基分类器<span class="math inline">\(\alpha_t h_t\)</span> 在 $_t $ 上的指数损失</li>
+</ul>
+<p><span class="math display">\[
+\alpha_t = \arg\min_\alpha l_{exp}(\alpha h_t|\mathcal{D}_t)
+\]</span></p>
+<p>注意到<span class="math inline">\(yh_t(\boldsymbol{x})\in \{-1, +1\}\)</span></p>
+<p><span class="math display">\[
+l_{exp}(\alpha_th_t|\mathcal{D}_t) = \mathbb{E}_{\boldsymbol{x} \sim \mathcal{D}_t} [e^{-y\alpha_th_t(\boldsymbol{x})}] \\
+\]</span></p>
+<p>指数损失<span class="math inline">\(l_{exp}(\alpha_th_t|\mathcal{D}_t)\)</span>最小化时，<span class="math inline">\(l_{exp}(\alpha_th_t|\mathcal{D}_t)\)</span>对基分类器的权重<span class="math inline">\(\alpha_t\)</span>的偏导数为0：</p>
+<p><span class="math display">\[
+\frac{\partial l_{exp}(\alpha_th_t|\mathcal{D}_t)}{\partial \alpha_t} = -e^{-\alpha_t}(1-\epsilon_t) + e^{\alpha_t} \epsilon_t = 0
+\]</span></p>
+<p>解得</p>
+<p><span class="math display">\[
+\alpha_t = \frac{1}{2} ln(\frac{1 - \epsilon_t}{\epsilon_t})
+\]</span></p>
+<p>从这里还可以看出，当<span class="math inline">\(\epsilon_t &gt; 0.5\)</span>时有<span class="math inline">\(\alpha_t &lt; 0\)</span>。</p>
+<p>这说明如果某一个基分类器比随机猜测的效果还差的时候，这个基分类器的权重应当取负数。与其留下效果不好的基分类器，倒不如直接舍弃，所以算法第5行要求基分类器的错误率要小于0.5才继续训练。</p>
+<h3 id="样本分布更新公式">样本分布更新公式</h3>
+<ul>
+<li>下一轮训练的基分类器<span class="math inline">\(h_t\)</span>应最小化基分类器加权和<span class="math inline">\(H_{t-1}+\alpha_th_t\)</span>在原始数据分布<span class="math inline">\(\mathcal{D}\)</span>上的指数损失<span class="math inline">\(l_{exp}(H_{t-1}+\alpha_th_t|\mathcal{D})\)</span></li>
+</ul>
+<p><span class="math display">\[
+h_t(\boldsymbol{x}) = \arg\min_h l_{exp}(H_{t-1}+\alpha_th|\mathcal{D})
+\]</span></p>
+<p><span class="math inline">\(l_{exp}(H_{t-1}+\alpha_th_t|\mathcal{D})\)</span>展开可以写成： <span class="math display">\[
+l_{exp}(H_{t-1}+\alpha_th_t|\mathcal{D}) = \mathbb{E}_{\boldsymbol{x} \sim \mathcal{D}} [e^{-yH_{t-1}(\boldsymbol{x})}(e^{-yh_{t-1}(\boldsymbol{x})})^{\alpha_t}]
+\]</span></p>
+<p>根据算法第5行，<span class="math inline">\(0 &lt; \epsilon_t \le 0.5\)</span>，所以<span class="math inline">\(\alpha_t \ge 0\)</span>。最小化<span class="math inline">\(l_{exp}(H_{t-1}+\alpha_th_t|\mathcal{D})\)</span>等价于最小化<span class="math inline">\(l_{exp}(H_{t-1}+h_t|\mathcal{D})\)</span></p>
+<p><span class="math display">\[
+l_{exp}(H_{t-1}+h_t|\mathcal{D}) = \mathbb{E}_{\boldsymbol{x} \sim \mathcal{D}} [e^{-y(H_{t-1}(\boldsymbol{x})+h_t(\boldsymbol{x}))}] = \mathbb{E}_{\boldsymbol{x} \sim \mathcal{D}} [e^{-yH_{t-1}(\boldsymbol{x})} e^{-yh_t(\boldsymbol{x})}]
+\]</span></p>
+<p>将<span class="math inline">\(e^{-yh_t(\boldsymbol{x})}\)</span>用泰勒公式展开到二阶近似代替，并注意到<span class="math inline">\(y^2 = h_t(\boldsymbol{x})^2=1\)</span></p>
+<p><span class="math display">\[
+l_{exp}(H_{t-1}+h_t|\mathcal{D}) \approx \mathbb{E}_{\boldsymbol{x} \sim \mathcal{D}} [e^{-yH_{t-1}(\boldsymbol{x})} (1-yh_t({\boldsymbol{x})+\frac{y^2h_t(\boldsymbol{x})^2}{2}})] \\
+= \mathbb{E}_{\boldsymbol{x} \sim \mathcal{D}} [e^{-yH_{t-1}(\boldsymbol{x})} (1-yh_t({\boldsymbol{x})+\frac{1}{2}})]
+\]</span></p>
+<p>所以</p>
+<p><span class="math display">\[
+h_t(\boldsymbol{x}) = \arg\min_h \mathbb{E}_{\boldsymbol{x} \sim \mathcal{D}} \mathbb{E}_{\boldsymbol{x} \sim \mathcal{D}} [e^{-yH_{t-1}(\boldsymbol{x})} (1-yh({\boldsymbol{x})+\frac{1}{2}})] \\
+= \arg \max_h \mathbb{E}_{\boldsymbol{x} \sim \mathcal{D}}[e^{-yH_{t-1}(\boldsymbol{x})}yh(\boldsymbol{x})]
+\]</span></p>
+<p>配上一个归一化用的常数因子</p>
+<p><span class="math display">\[
+\frac{1}{Z_t} = \frac{1}{\mathbb{E}_{\boldsymbol{x} \sim \mathcal{D}} [e^{-yH_{t-1}(\boldsymbol{x})}]}
+\]</span></p>
+<p>原式可以改写成</p>
+<p><span class="math display">\[
+h_t(\boldsymbol{x}) = \arg \max_h \mathbb{E}_{\boldsymbol{x} \sim \mathcal{D}}[\frac{e^{-yH_{t-1}(\boldsymbol{x})}}{\mathbb{E}_{\boldsymbol{x} \sim \mathcal{D}} [e^{-yH_{t-1}(\boldsymbol{x})}]}yh(\boldsymbol{x})]
+\]</span></p>
+<p>再令</p>
+<p><span class="math display">\[
+\mathcal{D}_t(\boldsymbol{x}) = \frac{\mathcal{D}(\boldsymbol{x})e^{-yH_{t-1}(\boldsymbol{x})}}{\mathbb{E}_{\boldsymbol{x} \sim \mathcal{D}} [e^{-yH_{t-1}(\boldsymbol{x})}]}
+\]</span></p>
+<p>不难证明<span class="math inline">\(\mathcal{D}_t\)</span>表示一个新的分布，考虑<span class="math inline">\(\mathcal{D}_{t+1}\)</span>和<span class="math inline">\(\mathcal{D}_t\)</span>的关系</p>
+<p><span class="math display">\[
+\mathcal{D}_{t+1}(\boldsymbol{x}) = \frac{\mathcal{D}(\boldsymbol{x})e^{-yH_{t}(\boldsymbol{x})}}{\mathbb{E}_{\boldsymbol{x} \sim \mathcal{D}} [e^{-yH_{t}(\boldsymbol{x})}]} \\
+= \frac{\mathcal{D}(\boldsymbol{x}) e^{-yH_{t-1}(\boldsymbol{x})}e^{-y\alpha_th_t(\boldsymbol{x})}}{\mathbb{E}_{\boldsymbol{x} \sim \mathcal{D}} [e^{-yH_{t}(\boldsymbol{x})}]} \\
+=\mathcal{D}_t(\boldsymbol{x})e^{-y\alpha_th_t(\boldsymbol{x})} ·\frac{\mathbb{E}_{\boldsymbol{x} \sim \mathcal{D}} [e^{-yH_{t-1}(\boldsymbol{x})}]}{\mathbb{E}_{\boldsymbol{x} \sim \mathcal{D}} [e^{-yH_{t}(\boldsymbol{x})}]}
+\]</span></p>
+<p>这就得到了算法第7行的样本分布更新公式。</p>
+<h3 id="在新的分布下最小化分类误差">在新的分布下最小化分类误差</h3>
+<p>原式又可以改写成</p>
+<p><span class="math display">\[
+h_t(\boldsymbol{x}) = \arg \max_h \mathbb{E}_{\boldsymbol{x} \sim \mathcal{D}_t} [yh(\boldsymbol{x})]
+\]</span></p>
+<p>这表明理想的<span class="math inline">\(h_t\)</span>是在新的分布<span class="math inline">\(\mathcal{D_t}\)</span>下最小化指数损失。由<span class="math inline">\(y,h(\boldsymbol{x})\in \{-1, +1\}\)</span>，有</p>
+<p><span class="math display">\[
+yh(\boldsymbol{x}) = 1 - 2 \mathbb{I}(y \ne h(\boldsymbol{x}))
+\]</span></p>
+<p>于是原式等价于</p>
+<p><span class="math display">\[
+h_t(\boldsymbol{x}) = \arg \min_h \mathbb{E}_{\boldsymbol{x} \sim \mathcal{D}_t} \mathbb{I} (y \ne h(\boldsymbol{x})) = \arg \min_h P(y \ne h(\boldsymbol{x}))
+\]</span></p>
+<p>这说明<span class="math inline">\(h_t\)</span>不仅在分布<span class="math inline">\(\mathcal{D}_t\)</span>下最小化指数损失，同时也在最小化分类误差</p>
+]]></content>
+      <categories>
+        <category>计算机科学</category>
+      </categories>
+      <tags>
+        <tag>机器学习</tag>
+        <tag>AdaBoost</tag>
+      </tags>
+  </entry>
+  <entry>
     <title>EM算法和高斯混合模型</title>
-    <url>/2020/11/09/EM/</url>
+    <url>/2020/11/09/EM%E5%92%8CGMM/</url>
     <content><![CDATA[<h1 id="em算法和高斯混合模型">EM算法和高斯混合模型</h1>
-<p>《统计学习方法》对EM算法和HMM的介绍都比较详细，但有不少地方绕弯路，而且记号稍显混乱；《西瓜书》对EM算法和HMM的介绍都非常简洁，有许多细节被略去；B站上的白板推导系列里也有EM算法和HMM详细推导。</p>
-<p>为了这次数据挖掘小组作业，在这里整理一下EM和HMM。</p>
+<p>《统计学习方法》对EM算法和GMM的介绍都比较详细，但有不少地方绕弯路，而且记号稍显混乱；《西瓜书》对EM算法和HMM的介绍都非常简洁，有许多细节被略去；B站上的白板推导系列里也有EM算法和GMM详细推导。</p>
+<p>为了这次数据挖掘小组作业，在这里整理一下EM和GMM。</p>
 <a id="more"></a>
 <h2 id="em算法">EM算法</h2>
 <p>EM算法是解决含有隐变量情况下的极大似然估计算法</p>
@@ -168,157 +319,6 @@ L = Q(\Theta, \Theta^{(t)}) + \lambda (\sum_{k=1}^K \alpha_k -1)
       </categories>
       <tags>
         <tag>机器学习</tag>
-      </tags>
-  </entry>
-  <entry>
-    <title>AdaBoost小结</title>
-    <url>/2020/06/28/AdaBoost%E5%B0%8F%E7%BB%93/</url>
-    <content><![CDATA[<h1 id="adaboost">AdaBoost</h1>
-<p>总结一下AdaBoost</p>
-<blockquote>
-<p>参考文献：西瓜书，南瓜书，"ADDITIVE LOGISTIC REGRESSION: A STATISTICAL VIEW OF BOOSTING"</p>
-</blockquote>
-<a id="more"></a>
-<h2 id="集成学习">集成学习</h2>
-<p>集成学习（ensemble learning）通过构建多个个体学习器，并将它们结合在一起构成集成学习器来完成学习任务。</p>
-<p>集成学习的两个关键要素就是个体学习器（基学习器）和结合策略。</p>
-<ul>
-<li>假设个体学习器错误率相互独立的前提下，可以证明随着集成数量的增加，集成错误率将以指数级下降并趋于0.</li>
-</ul>
-<p>根据结合策略的不同，目前集成学习的方法可大体分为Boosting和Bagging两大类。</p>
-<h2 id="boosting">Boosting</h2>
-<p>Boosting（提升学习）是一族将弱学习器提升为强学习器的算法，个体学习器之间存在强依赖关系，必须串行生成。</p>
-<p>通常的工作机制是：先训练出一个基学习器，根据基学习器的表现对训练样本的分布进行调整，使先前分类错误的样本在后续得到更多关注，然后基于调整后的分布进行训练下一个基学习器。最后将基学习器进行结合。</p>
-<h2 id="adaboost-1">AdaBoost</h2>
-<p>AdaBoost是Boosting算法里著名的代表，标准的AdaBoost只适用于二分类任务。</p>
-<p>假设训练集为<span class="math inline">\(D = \{(\boldsymbol{x}_1, y_1),...,(\boldsymbol{x}_m, y_m)\}\)</span>，其中<span class="math inline">\(\boldsymbol{x}_i \in \mathbb{R}^n\)</span>，<span class="math inline">\(y_i \in \{-1, +1\}\)</span>为样本的类标记。假设训练集<span class="math inline">\(D\)</span>里的样本服从某个分布<span class="math inline">\(\mathcal{D}\)</span>，即<span class="math inline">\(\boldsymbol{x} \sim \mathcal{D}\)</span>。</p>
-<p>第<span class="math inline">\(t\)</span>轮训练的基分类器记为<span class="math inline">\(h_t(\boldsymbol{x})\)</span>，基分类器的加权和记为<span class="math inline">\(H(\boldsymbol{x})\)</span>，最终的集成分类器记为<span class="math inline">\(F(\boldsymbol{x})\)</span></p>
-<p><img src="/images/AdaBoost.png" width="500" hegiht="313" align=center /></p>
-<ul>
-<li>AdaBoost算法需要详细解释的地方有两处：①基分类器<span class="math inline">\(h_t\)</span>的权重为何采用第6行的公式来计算②样本分布为何采用第7行的公式来更新</li>
-</ul>
-<h3 id="adaboost的损失函数指数损失">AdaBoost的损失函数——指数损失</h3>
-<p>根据西瓜书的推导方法，AdaBoost采用的损失函数为指数损失函数：</p>
-<p><span class="math display">\[
-l_{exp}(H|\mathcal{D}) = \mathbb{E}_{\boldsymbol{x} \sim \mathcal{D}}[e^{-yH(\boldsymbol{x})}]
-\]</span></p>
-<p>其中<span class="math inline">\(H(\boldsymbol{x})\)</span>是基分类器的加权和，<span class="math inline">\(y\)</span>是样本的类标记。</p>
-<p><span class="math display">\[
-H(\boldsymbol{x}) = \sum_{t=1}^T \alpha_t h_t(\boldsymbol{x})
-\]</span></p>
-<h3 id="贝叶斯最优错误率">贝叶斯最优错误率</h3>
-<ul>
-<li>最小化指数损失将使最终的集成分类器<span class="math inline">\(F(\boldsymbol{x})\)</span>满足<strong>贝叶斯最优错误率</strong>：</li>
-</ul>
-<p><span class="math display">\[
-F(\boldsymbol{x}) = \arg\max_y P(f(\boldsymbol{x})=y|\boldsymbol{x})
-\]</span></p>
-<p>当指数损失得到最小化时，对应的条件期望 <span class="math inline">\(\mathbb{E}_{\boldsymbol{x} \sim \mathcal{D}}[e^{-yH(\boldsymbol{x})}|\boldsymbol{x}]\)</span> 也一定得到最小化。</p>
-<p><span class="math display">\[
-\mathbb{E}_{\boldsymbol{x} \sim \mathcal{D}}[e^{-yH(\boldsymbol{x})}|\boldsymbol{x}] = e^{-H(\boldsymbol{x})} P(y=1|\boldsymbol{x}) + e^{H(\boldsymbol{x})} P(y=-1|\boldsymbol{x})
-\]</span></p>
-<p>此时条件期望对<span class="math inline">\(H(\boldsymbol{x})\)</span>的偏导数为0：</p>
-<p><span class="math display">\[
-\frac{\partial \mathbb{E}_{\boldsymbol{x} \sim \mathcal{D}}[e^{-yH(\boldsymbol{x})}|\boldsymbol{x}]}{\partial H(\boldsymbol{x})} = -e^{-H(\boldsymbol{x})} P(y=1|\boldsymbol{x}) + e^{H(\boldsymbol{x})}P(y=-1|\boldsymbol{x}) = 0
-\]</span></p>
-<p>解得</p>
-<p><span class="math display">\[
-H(\boldsymbol{x}) = \frac{1}{2} ln\frac{P(y=1|\boldsymbol{x})}{P(y=-1|\boldsymbol{x})}
-\]</span></p>
-<p>因此有</p>
-<p><span class="math display">\[
-F(\boldsymbol{x}) = sign(H(\boldsymbol{x})) = sign(ln\frac{P(y=1|\boldsymbol{x})}{P(y=-1|\boldsymbol{x})}) 
-= \begin{cases}
-1,  &amp; P(y=1|\boldsymbol{x}) &gt; P(y=-1|\boldsymbol{x}) \\
--1, &amp; P(y=1|\boldsymbol{x}) &lt; P(y=-1|\boldsymbol{x})
-\end{cases} \\
-= \arg\max_y P(f(\boldsymbol{x})=y|\boldsymbol{x})
-\]</span></p>
-<h3 id="基分类器权重公式">基分类器权重公式</h3>
-<ul>
-<li>权重<span class="math inline">\(\alpha_t\)</span>应最小化带权基分类器<span class="math inline">\(\alpha_t h_t\)</span> 在 $_t $ 上的指数损失</li>
-</ul>
-<p><span class="math display">\[
-\alpha_t = \arg\min_\alpha l_{exp}(\alpha h_t|\mathcal{D}_t)
-\]</span></p>
-<p>注意到<span class="math inline">\(yh_t(\boldsymbol{x})\in \{-1, +1\}\)</span></p>
-<p><span class="math display">\[
-l_{exp}(\alpha_th_t|\mathcal{D}_t) = \mathbb{E}_{\boldsymbol{x} \sim \mathcal{D}_t} [e^{-y\alpha_th_t(\boldsymbol{x})}] \\
-\]</span></p>
-<p>指数损失<span class="math inline">\(l_{exp}(\alpha_th_t|\mathcal{D}_t)\)</span>最小化时，<span class="math inline">\(l_{exp}(\alpha_th_t|\mathcal{D}_t)\)</span>对基分类器的权重<span class="math inline">\(\alpha_t\)</span>的偏导数为0：</p>
-<p><span class="math display">\[
-\frac{\partial l_{exp}(\alpha_th_t|\mathcal{D}_t)}{\partial \alpha_t} = -e^{-\alpha_t}(1-\epsilon_t) + e^{\alpha_t} \epsilon_t = 0
-\]</span></p>
-<p>解得</p>
-<p><span class="math display">\[
-\alpha_t = \frac{1}{2} ln(\frac{1 - \epsilon_t}{\epsilon_t})
-\]</span></p>
-<p>从这里还可以看出，当<span class="math inline">\(\epsilon_t &gt; 0.5\)</span>时有<span class="math inline">\(\alpha_t &lt; 0\)</span>。</p>
-<p>这说明如果某一个基分类器比随机猜测的效果还差的时候，这个基分类器的权重应当取负数。与其留下效果不好的基分类器，倒不如直接舍弃，所以算法第5行要求基分类器的错误率要小于0.5才继续训练。</p>
-<h3 id="样本分布更新公式">样本分布更新公式</h3>
-<ul>
-<li>下一轮训练的基分类器<span class="math inline">\(h_t\)</span>应最小化基分类器加权和<span class="math inline">\(H_{t-1}+\alpha_th_t\)</span>在原始数据分布<span class="math inline">\(\mathcal{D}\)</span>上的指数损失<span class="math inline">\(l_{exp}(H_{t-1}+\alpha_th_t|\mathcal{D})\)</span></li>
-</ul>
-<p><span class="math display">\[
-h_t(\boldsymbol{x}) = \arg\min_h l_{exp}(H_{t-1}+\alpha_th|\mathcal{D})
-\]</span></p>
-<p><span class="math inline">\(l_{exp}(H_{t-1}+\alpha_th_t|\mathcal{D})\)</span>展开可以写成： <span class="math display">\[
-l_{exp}(H_{t-1}+\alpha_th_t|\mathcal{D}) = \mathbb{E}_{\boldsymbol{x} \sim \mathcal{D}} [e^{-yH_{t-1}(\boldsymbol{x})}(e^{-yh_{t-1}(\boldsymbol{x})})^{\alpha_t}]
-\]</span></p>
-<p>根据算法第5行，<span class="math inline">\(0 &lt; \epsilon_t \le 0.5\)</span>，所以<span class="math inline">\(\alpha_t \ge 0\)</span>。最小化<span class="math inline">\(l_{exp}(H_{t-1}+\alpha_th_t|\mathcal{D})\)</span>等价于最小化<span class="math inline">\(l_{exp}(H_{t-1}+h_t|\mathcal{D})\)</span></p>
-<p><span class="math display">\[
-l_{exp}(H_{t-1}+h_t|\mathcal{D}) = \mathbb{E}_{\boldsymbol{x} \sim \mathcal{D}} [e^{-y(H_{t-1}(\boldsymbol{x})+h_t(\boldsymbol{x}))}] = \mathbb{E}_{\boldsymbol{x} \sim \mathcal{D}} [e^{-yH_{t-1}(\boldsymbol{x})} e^{-yh_t(\boldsymbol{x})}]
-\]</span></p>
-<p>将<span class="math inline">\(e^{-yh_t(\boldsymbol{x})}\)</span>用泰勒公式展开到二阶近似代替，并注意到<span class="math inline">\(y^2 = h_t(\boldsymbol{x})^2=1\)</span></p>
-<p><span class="math display">\[
-l_{exp}(H_{t-1}+h_t|\mathcal{D}) \approx \mathbb{E}_{\boldsymbol{x} \sim \mathcal{D}} [e^{-yH_{t-1}(\boldsymbol{x})} (1-yh_t({\boldsymbol{x})+\frac{y^2h_t(\boldsymbol{x})^2}{2}})] \\
-= \mathbb{E}_{\boldsymbol{x} \sim \mathcal{D}} [e^{-yH_{t-1}(\boldsymbol{x})} (1-yh_t({\boldsymbol{x})+\frac{1}{2}})]
-\]</span></p>
-<p>所以</p>
-<p><span class="math display">\[
-h_t(\boldsymbol{x}) = \arg\min_h \mathbb{E}_{\boldsymbol{x} \sim \mathcal{D}} \mathbb{E}_{\boldsymbol{x} \sim \mathcal{D}} [e^{-yH_{t-1}(\boldsymbol{x})} (1-yh({\boldsymbol{x})+\frac{1}{2}})] \\
-= \arg \max_h \mathbb{E}_{\boldsymbol{x} \sim \mathcal{D}}[e^{-yH_{t-1}(\boldsymbol{x})}yh(\boldsymbol{x})]
-\]</span></p>
-<p>配上一个归一化用的常数因子</p>
-<p><span class="math display">\[
-\frac{1}{Z_t} = \frac{1}{\mathbb{E}_{\boldsymbol{x} \sim \mathcal{D}} [e^{-yH_{t-1}(\boldsymbol{x})}]}
-\]</span></p>
-<p>原式可以改写成</p>
-<p><span class="math display">\[
-h_t(\boldsymbol{x}) = \arg \max_h \mathbb{E}_{\boldsymbol{x} \sim \mathcal{D}}[\frac{e^{-yH_{t-1}(\boldsymbol{x})}}{\mathbb{E}_{\boldsymbol{x} \sim \mathcal{D}} [e^{-yH_{t-1}(\boldsymbol{x})}]}yh(\boldsymbol{x})]
-\]</span></p>
-<p>再令</p>
-<p><span class="math display">\[
-\mathcal{D}_t(\boldsymbol{x}) = \frac{\mathcal{D}(\boldsymbol{x})e^{-yH_{t-1}(\boldsymbol{x})}}{\mathbb{E}_{\boldsymbol{x} \sim \mathcal{D}} [e^{-yH_{t-1}(\boldsymbol{x})}]}
-\]</span></p>
-<p>不难证明<span class="math inline">\(\mathcal{D}_t\)</span>表示一个新的分布，考虑<span class="math inline">\(\mathcal{D}_{t+1}\)</span>和<span class="math inline">\(\mathcal{D}_t\)</span>的关系</p>
-<p><span class="math display">\[
-\mathcal{D}_{t+1}(\boldsymbol{x}) = \frac{\mathcal{D}(\boldsymbol{x})e^{-yH_{t}(\boldsymbol{x})}}{\mathbb{E}_{\boldsymbol{x} \sim \mathcal{D}} [e^{-yH_{t}(\boldsymbol{x})}]} \\
-= \frac{\mathcal{D}(\boldsymbol{x}) e^{-yH_{t-1}(\boldsymbol{x})}e^{-y\alpha_th_t(\boldsymbol{x})}}{\mathbb{E}_{\boldsymbol{x} \sim \mathcal{D}} [e^{-yH_{t}(\boldsymbol{x})}]} \\
-=\mathcal{D}_t(\boldsymbol{x})e^{-y\alpha_th_t(\boldsymbol{x})} ·\frac{\mathbb{E}_{\boldsymbol{x} \sim \mathcal{D}} [e^{-yH_{t-1}(\boldsymbol{x})}]}{\mathbb{E}_{\boldsymbol{x} \sim \mathcal{D}} [e^{-yH_{t}(\boldsymbol{x})}]}
-\]</span></p>
-<p>这就得到了算法第7行的样本分布更新公式。</p>
-<h3 id="在新的分布下最小化分类误差">在新的分布下最小化分类误差</h3>
-<p>原式又可以改写成</p>
-<p><span class="math display">\[
-h_t(\boldsymbol{x}) = \arg \max_h \mathbb{E}_{\boldsymbol{x} \sim \mathcal{D}_t} [yh(\boldsymbol{x})]
-\]</span></p>
-<p>这表明理想的<span class="math inline">\(h_t\)</span>是在新的分布<span class="math inline">\(\mathcal{D_t}\)</span>下最小化指数损失。由<span class="math inline">\(y,h(\boldsymbol{x})\in \{-1, +1\}\)</span>，有</p>
-<p><span class="math display">\[
-yh(\boldsymbol{x}) = 1 - 2 \mathbb{I}(y \ne h(\boldsymbol{x}))
-\]</span></p>
-<p>于是原式等价于</p>
-<p><span class="math display">\[
-h_t(\boldsymbol{x}) = \arg \min_h \mathbb{E}_{\boldsymbol{x} \sim \mathcal{D}_t} \mathbb{I} (y \ne h(\boldsymbol{x})) = \arg \min_h P(y \ne h(\boldsymbol{x}))
-\]</span></p>
-<p>这说明<span class="math inline">\(h_t\)</span>不仅在分布<span class="math inline">\(\mathcal{D}_t\)</span>下最小化指数损失，同时也在最小化分类误差</p>
-]]></content>
-      <categories>
-        <category>计算机科学</category>
-      </categories>
-      <tags>
-        <tag>机器学习</tag>
-        <tag>AdaBoost</tag>
       </tags>
   </entry>
   <entry>
