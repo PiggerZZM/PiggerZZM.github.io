@@ -200,9 +200,7 @@ ln p(\mathbf{x};\Theta) \ge \int_{\mathbf{z}} ln\frac{p(\mathbf{x},\mathbf{z};\T
 <li>经过这一系列的迭代，每一步选取的<span class="math inline">\(\Theta\)</span>都使下界<span class="math inline">\(B(\Theta,\Theta^{(t)})\)</span>得到增大，迫使对数似然函数也被增大。再由单调有界原理可以证明EM算法将会收敛到一个局部极大值点。</li>
 </ul>
 <p>下图是《统计学习方法》的插图，解释了EM算法的迭代过程</p>
-<figure>
-<img src="https://i.loli.net/2020/11/17/sapn9l26yfU4rxN.png" alt="image-20201117023122132" /><figcaption aria-hidden="true">image-20201117023122132</figcaption>
-</figure>
+<p><img src="https://i.loli.net/2020/11/17/sapn9l26yfU4rxN.png" /></p>
 <p>如果将积分项写成数学期望，则迭代公式还可写作 <span class="math display">\[
 \Theta^{(t+1)} = \arg\max_{\Theta} \mathbb{E}_{\mathbf{z|\mathbf{x};\Theta^{t}}} [lnp(\mathbf{x},\mathbf{z};\Theta)]
 \]</span> 可以看到这个迭代公式分两步，第一步求期望，第二步求最大化，这也是<strong>EM算法(Expectation-Maximum)</strong>名字的由来</p>
